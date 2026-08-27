@@ -273,6 +273,110 @@
     .grafico-box.alto { height: 300px; }
     .grafico-box.medio { height: 260px; }
   }
+
+  /* ===== BUSCA ===== */
+  .busca-wrap { position: relative; flex: 1 1 260px; min-width: 220px; max-width: 420px; }
+  .busca {
+    width: 100%; background: var(--bg3); border: 1px solid var(--borda); color: var(--texto);
+    border-radius: 9px; padding: 0.5rem 2rem 0.5rem 2rem; font-size: 0.85rem;
+    font-family: inherit; outline: none; transition: border-color .15s;
+  }
+  .busca:focus { border-color: var(--azul-claro); }
+  .busca::placeholder { color: #47536b; }
+  .busca-icone {
+    position: absolute; left: 0.6rem; top: 50%; transform: translateY(-50%);
+    color: var(--texto-muted); font-size: 0.85rem; pointer-events: none;
+  }
+  .busca-limpar {
+    position: absolute; right: 0.45rem; top: 50%; transform: translateY(-50%);
+    background: transparent; border: none; color: var(--texto-muted);
+    font-size: 1rem; cursor: pointer; padding: 0 .2rem; line-height: 1; font-family: inherit;
+  }
+  .busca-limpar:hover { color: var(--vermelho); }
+
+  /* ===== LINHAS CLICÁVEIS ===== */
+  tbody tr.clicavel { cursor: pointer; transition: background .12s; }
+  tbody tr.clicavel:hover { background: rgba(59,130,246,0.10); }
+  tbody tr.clicavel:hover td:first-child { box-shadow: inset 3px 0 0 var(--azul-claro); }
+  .dica-clique {
+    font-size: 0.72rem; color: var(--texto-muted); margin-left: auto;
+    display: inline-flex; align-items: center; gap: .3rem; white-space: nowrap;
+  }
+
+  /* ===== MODAL DE DETALHE ===== */
+  .modal-fundo {
+    position: fixed; inset: 0; z-index: 900;
+    background: rgba(5,8,15,0.72); backdrop-filter: blur(2px);
+    display: flex; align-items: center; justify-content: center; padding: 1.25rem;
+    opacity: 0; transition: opacity .16s;
+  }
+  .modal-fundo.aberto { opacity: 1; }
+  .modal {
+    width: 100%; max-width: 660px; max-height: 88vh; overflow-y: auto;
+    background: var(--bg2); border: 1px solid var(--borda); border-radius: 14px;
+    box-shadow: 0 24px 70px rgba(0,0,0,0.6);
+    transform: translateY(8px); transition: transform .16s;
+  }
+  .modal-fundo.aberto .modal { transform: translateY(0); }
+  .modal::-webkit-scrollbar { width: 9px; }
+  .modal::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 5px; }
+  .modal-topo {
+    display: flex; align-items: flex-start; gap: 1rem;
+    padding: 1.15rem 1.35rem 0.9rem; border-bottom: 1px solid var(--borda);
+    position: sticky; top: 0; background: var(--bg2); z-index: 2;
+    border-radius: 14px 14px 0 0;
+  }
+  .modal-titulo { font-size: 1.02rem; font-weight: 800; line-height: 1.3; letter-spacing: -0.01em; }
+  .modal-sub { font-size: 0.78rem; color: var(--texto-muted); margin-top: 0.2rem; line-height: 1.45; }
+  .modal-fechar {
+    margin-left: auto; flex-shrink: 0; background: transparent;
+    border: 1px solid rgba(255,255,255,0.15); border-radius: 8px;
+    color: var(--texto-muted); font-size: 1.05rem; line-height: 1;
+    padding: 0.32rem 0.55rem; cursor: pointer; font-family: inherit; transition: all .15s;
+  }
+  .modal-fechar:hover { color: var(--vermelho); border-color: var(--vermelho); }
+  .modal-corpo { padding: 1.1rem 1.35rem 1.35rem; }
+  .modal-bloco { margin-bottom: 1.15rem; }
+  .modal-bloco:last-child { margin-bottom: 0; }
+  .modal-bloco-titulo {
+    font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--texto-muted); font-weight: 700; margin-bottom: 0.5rem;
+    padding-bottom: 0.3rem; border-bottom: 1px solid var(--borda);
+  }
+  .modal-campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.7rem 1.1rem; }
+  .modal-campo { min-width: 0; }
+  .modal-campo.largo { grid-column: 1 / -1; }
+  .modal-rotulo {
+    font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--texto-muted); font-weight: 700; margin-bottom: 0.15rem;
+  }
+  .modal-valor { font-size: 0.9rem; font-weight: 600; word-break: break-word; line-height: 1.45; }
+  .modal-valor.grande { font-size: 1.15rem; font-weight: 800; letter-spacing: -0.02em; }
+  .modal-valor.muted { color: var(--texto-muted); font-weight: 500; }
+  .modal-valor.texto { font-weight: 500; white-space: pre-wrap; font-size: 0.85rem; }
+  .modal-nota {
+    margin-top: 0.9rem; padding: 0.7rem 0.85rem; border-radius: 9px;
+    background: var(--bg3); border-left: 3px solid var(--azul-claro);
+    font-size: 0.8rem; color: var(--texto-muted); line-height: 1.55;
+  }
+  .modal-nota.alerta { border-left-color: var(--amarelo); background: rgba(245,158,11,0.07); }
+  .modal-nota.critico { border-left-color: var(--vermelho); background: rgba(239,68,68,0.07); }
+  .modal-nota b { color: var(--texto); }
+  .modal-acoes { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.1rem; }
+  .modal-acao {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    padding: 0.45rem 0.8rem; border-radius: 8px; text-decoration: none;
+    background: var(--bg3); border: 1px solid var(--borda);
+    color: var(--texto); font-size: 0.8rem; font-weight: 600;
+    font-family: inherit; cursor: pointer; transition: all .15s;
+  }
+  .modal-acao:hover { border-color: var(--azul-claro); color: #fff; }
+
+  @media (max-width: 720px) {
+    .modal { max-height: 92vh; }
+    .modal-campos { grid-template-columns: 1fr; }
+  }
+
 </style>
 </head>
 <body>
@@ -336,6 +440,27 @@
   </section>
 
   <section class="secao">
+    <div class="secao-titulo">Buscar Cliente</div>
+    <div class="secao-sub">Digite parte do nome, do telefone, do CPF/CNPJ ou do e-mail. Clique em qualquer resultado para ver a ficha completa.</div>
+    <div class="card">
+      <div class="filtros">
+        <span id="buscaCampo"></span>
+        <button type="button" class="chip ativo" data-b="todos">Todos</button>
+        <button type="button" class="chip" data-b="PF">Só PF</button>
+        <button type="button" class="chip" data-b="PJ">Só PJ</button>
+        <span class="dica-clique">&#128065; clique em um resultado para abrir a ficha</span>
+      </div>
+      <div class="tabela-wrap">
+        <table id="tabelaBusca">
+          <thead><tr><th>Cliente</th><th>Tipo</th><th>Documento</th><th>Telefone</th><th>E-mail</th><th>Cadastro</th></tr></thead>
+          <tbody id="corpoBusca"></tbody>
+        </table>
+      </div>
+      <div class="secao-sub" id="notaBusca" style="margin:.6rem 0 0 0"></div>
+    </div>
+  </section>
+
+  <section class="secao">
     <div class="secao-titulo">Composição e Alcance da Base</div>
     <div class="secao-sub">Quem são os clientes do escritório e de onde eles vêm — o DDD do telefone é usado como proxy da praça de atuação.</div>
     <div class="grid-2">
@@ -372,6 +497,7 @@
         <button type="button" class="chip" data-f="docinv">Documento inválido</button>
         <button type="button" class="chip" data-f="mailinv">E-mail suspeito</button>
         <button type="button" class="chip" data-f="foneinv">Telefone suspeito</button>
+        <span class="dica-clique">&#128065; clique em uma linha para ver os detalhes</span>
       </div>
       <div class="tabela-wrap">
         <table id="tabelaQual">
@@ -615,6 +741,133 @@ function topN(mapa, n, rotuloOutros) {
 }
 
 /* =========================================================================
+   DETALHE EM JANELA (MODAL)
+   Uso: abrirDetalhe({ titulo, sub, blocos:[{titulo, campos:[{r,v,largo,classe}]}],
+                       notas:[{tipo,html}], acoes:[{rotulo,href}] })
+   Linhas de tabela viram clicáveis com `tabelaClicavel(tbodyId, lista, montador)`.
+   ========================================================================= */
+(function () {
+  const fundo = document.createElement('div');
+  fundo.className = 'modal-fundo oculto';
+  fundo.id = 'modalFundo';
+  fundo.innerHTML =
+    '<div class="modal" role="dialog" aria-modal="true">' +
+      '<div class="modal-topo">' +
+        '<div><div class="modal-titulo" id="modalTitulo"></div>' +
+        '<div class="modal-sub" id="modalSub"></div></div>' +
+        '<button class="modal-fechar" id="modalFechar" title="Fechar (Esc)">&#10005;</button>' +
+      '</div>' +
+      '<div class="modal-corpo" id="modalCorpo"></div>' +
+    '</div>';
+  document.body.appendChild(fundo);
+
+  fundo.addEventListener('click', ev => { if (ev.target === fundo) fecharDetalhe(); });
+  document.getElementById('modalFechar').addEventListener('click', fecharDetalhe);
+  document.addEventListener('keydown', ev => {
+    if (ev.key === 'Escape' && !fundo.classList.contains('oculto')) fecharDetalhe();
+  });
+})();
+
+function fecharDetalhe() {
+  const f = document.getElementById('modalFundo');
+  f.classList.remove('aberto');
+  setTimeout(() => f.classList.add('oculto'), 160);
+}
+
+function abrirDetalhe(cfg) {
+  const f = document.getElementById('modalFundo');
+  document.getElementById('modalTitulo').innerHTML = cfg.titulo || '';
+  document.getElementById('modalSub').innerHTML = cfg.sub || '';
+
+  let html = '';
+  (cfg.blocos || []).forEach(bl => {
+    const campos = (bl.campos || []).filter(c => c && c.v !== undefined && c.v !== null && c.v !== '');
+    if (!campos.length) return;
+    html += '<div class="modal-bloco">' +
+      (bl.titulo ? '<div class="modal-bloco-titulo">' + bl.titulo + '</div>' : '') +
+      '<div class="modal-campos">' +
+      campos.map(c =>
+        '<div class="modal-campo' + (c.largo ? ' largo' : '') + '">' +
+        '<div class="modal-rotulo">' + c.r + '</div>' +
+        '<div class="modal-valor ' + (c.classe || '') + '">' + c.v + '</div></div>'
+      ).join('') + '</div></div>';
+  });
+  (cfg.notas || []).forEach(n => {
+    if (!n || !n.html) return;
+    html += '<div class="modal-nota ' + (n.tipo || '') + '">' + n.html + '</div>';
+  });
+  if (cfg.acoes && cfg.acoes.length) {
+    html += '<div class="modal-acoes">' + cfg.acoes.filter(Boolean).map(a =>
+      '<a class="modal-acao" href="' + a.href + '" target="_blank" rel="noopener">' + a.rotulo + '</a>'
+    ).join('') + '</div>';
+  }
+  document.getElementById('modalCorpo').innerHTML = html ||
+    '<div style="color:var(--texto-muted);font-size:.85rem">Sem dados detalhados para este registro.</div>';
+
+  f.classList.remove('oculto');
+  requestAnimationFrame(() => f.classList.add('aberto'));
+}
+
+/** Marca as linhas de um tbody como clicáveis e liga cada uma ao seu registro. */
+function tabelaClicavel(tbodyId, lista, montador) {
+  const tb = document.getElementById(tbodyId);
+  if (!tb) return;
+  Array.from(tb.querySelectorAll('tr')).forEach((tr, i) => {
+    if (i >= lista.length || !lista[i]) return;
+    tr.classList.add('clicavel');
+    tr.title = 'Clique para ver os detalhes';
+    tr.addEventListener('click', () => abrirDetalhe(montador(lista[i])));
+  });
+}
+
+/** Rótulo padrão avisando que a tabela é clicável. */
+function dicaClique(texto) {
+  return '<span class="dica-clique">&#128065; ' + (texto || 'clique em uma linha para ver os detalhes') + '</span>';
+}
+
+/* =========================================================================
+   BUSCA
+   ========================================================================= */
+/** Normaliza para busca: sem acento, minúsculo, só dígitos preservados. */
+function chaveBusca(s) {
+  return String(s === null || s === undefined ? '' : s)
+    .normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+}
+/** Termo casa se todas as palavras aparecerem no texto; dígitos comparam só dígitos. */
+function casaBusca(termo, ...campos) {
+  const t = chaveBusca(termo);
+  if (!t) return true;
+  const texto = campos.map(c => chaveBusca(c)).join(' ');
+  const soDig = texto.replace(/\D/g, '');
+  return t.split(/\s+/).every(p => {
+    if (/^\d{3,}$/.test(p)) return soDig.includes(p) || texto.includes(p);
+    return texto.includes(p);
+  });
+}
+/** Monta o HTML de um campo de busca. */
+function campoBusca(id, placeholder) {
+  return '<div class="busca-wrap">' +
+    '<span class="busca-icone">&#128269;</span>' +
+    '<input type="search" class="busca" id="' + id + '" placeholder="' + placeholder + '" autocomplete="off" />' +
+    '<button type="button" class="busca-limpar oculto" id="' + id + 'Limpar" title="Limpar">&#10005;</button></div>';
+}
+/** Liga o campo de busca a um callback, com debounce curto. */
+function ligarBusca(id, aoDigitar) {
+  const el = document.getElementById(id);
+  const limpar = document.getElementById(id + 'Limpar');
+  if (!el) return;
+  let t = null;
+  const disparar = () => {
+    limpar.classList.toggle('oculto', !el.value);
+    clearTimeout(t);
+    t = setTimeout(() => aoDigitar(el.value), 120);
+  };
+  el.addEventListener('input', disparar);
+  limpar.addEventListener('click', () => { el.value = ''; el.focus(); disparar(); });
+}
+
+
+/* =========================================================================
    APLICAÇÃO
    ========================================================================= */
 const ABAS = {
@@ -639,6 +892,7 @@ const DDD_UF = {
 
 let BASE = null;
 const FILTRO_QUAL = { f: 'todos' };
+const BUSCA = { termo: '', tipo: 'todos' };
 
 async function buscarTudo() {
   const [pf, pj, kommo] = await lerAbas([ABAS.pf, ABAS.pj, ABAS.kommo]);
@@ -802,6 +1056,149 @@ function agregar(b) {
   return a;
 }
 
+/* =========================================================================
+   FICHA DO CLIENTE (janela de detalhe)
+   ========================================================================= */
+function tagOk(ok, simTexto, naoTexto) {
+  return ok ? '<span class="tag-pct verde">' + simTexto + '</span>'
+            : '<span class="tag-pct vermelho">' + naoTexto + '</span>';
+}
+
+function fichaCliente(p) {
+  const problemas = [];
+  if (!p.docOk) problemas.push('documento reprovado no dígito verificador');
+  if (p.dupDoc) problemas.push('CPF/CNPJ repetido em outro cadastro');
+  if (p.dupTel) problemas.push('telefone repetido em outro cadastro');
+  if (p.dupMail) problemas.push('e-mail repetido em outro cadastro');
+  if (p.emailRuim) problemas.push('e-mail com formato ou domínio suspeito');
+  if (!p.fone.ok) problemas.push('telefone sem DDD válido');
+
+  // Cadastros que compartilham algum contato com este
+  const relacionados = BASE.pessoas.filter(o => o !== p && (
+    (p.docNum && o.docNum === p.docNum) ||
+    (p.telNum && o.telNum === p.telNum) ||
+    (p.emailNorm && o.emailNorm === p.emailNorm)
+  ));
+
+  const telLimpo = p.telNum ? '55' + p.telNum : '';
+  const acoes = [];
+  if (telLimpo) acoes.push({ rotulo: '&#128172; Abrir no WhatsApp', href: 'https://wa.me/' + telLimpo });
+  if (p.email && !p.emailRuim) acoes.push({ rotulo: '&#9993; Enviar e-mail', href: 'mailto:' + p.email });
+
+  return {
+    titulo: esc(p.nome),
+    sub: (p.tipo === 'PJ' ? 'Pessoa jurídica' : 'Pessoa física') +
+         (p.uf ? ' · praça ' + p.uf + ' (DDD ' + p.fone.ddd + ')' : ' · praça não identificada'),
+    blocos: [
+      { titulo: 'Identificação', campos: [
+        { r: p.tipo === 'PJ' ? 'CNPJ' : 'CPF', v: esc(p.doc || '—') + ' ' + tagOk(p.docOk, 'válido', 'inválido') },
+        { r: 'Tipo', v: p.tipo === 'PJ' ? 'Pessoa jurídica' : 'Pessoa física' },
+        p.tipo === 'PJ' ? { r: 'Representante', v: esc(p.representante || '—') } : null,
+        p.tipo === 'PJ' && p.repDoc ? { r: 'CPF do representante', v: esc(p.repDoc) } : null,
+        p.tipo === 'PJ' ? { r: 'Representante também é cliente PF', v: p.repTambemPF
+          ? '<span class="tag-pct verde">Sim</span>' : '<span class="tag-pct neutro">Não</span>' } : null
+      ]},
+      { titulo: 'Contato', campos: [
+        { r: 'Telefone', v: esc(p.tel || '—') + ' ' + (p.fone.ok
+            ? '<span class="tag-pct verde">' + p.uf + '</span>'
+            : '<span class="tag-pct vermelho">sem DDD válido</span>') },
+        { r: 'E-mail', v: esc(p.email || '—') + ' ' + (p.email
+            ? tagOk(!p.emailRuim, 'ok', 'suspeito') : ''), largo: true }
+      ]},
+      { titulo: 'Qualidade do cadastro', campos: [
+        { r: 'Situação', v: problemas.length
+            ? '<span class="tag-pct vermelho">' + problemas.length + ' ocorrência' + (problemas.length === 1 ? '' : 's') + '</span>'
+            : '<span class="tag-pct verde">Sem inconsistências</span>' },
+        { r: 'Cadastros que compartilham contato', v: relacionados.length
+            ? '<span class="tag-pct amarelo">' + relacionados.length + '</span>' : '<span class="tag-pct verde">nenhum</span>' },
+        problemas.length ? { r: 'O que precisa ser corrigido', v: problemas.join(' · '), classe: 'texto muted', largo: true } : null
+      ]},
+      relacionados.length ? { titulo: 'Cadastros relacionados', campos: relacionados.slice(0, 8).map(o => ({
+        r: o.tipo + ' · ' + (o.docNum === p.docNum ? 'mesmo documento' : o.telNum === p.telNum ? 'mesmo telefone' : 'mesmo e-mail'),
+        v: esc(o.nome), largo: true, classe: 'texto'
+      })) } : null
+    ].filter(Boolean),
+    notas: [
+      problemas.length ? { tipo: 'critico', html: 'Este cadastro tem <b>' + problemas.length +
+        '</b> ponto(s) a corrigir. Documento ou contato inválido significa cliente que o escritório pode não conseguir localizar — e intimação ou prestação de contas que não chega.' } : null,
+      relacionados.length && !p.dupDoc ? { tipo: 'alerta', html: 'Compartilha contato com <b>' + relacionados.length +
+        '</b> outro(s) cadastro(s). Pode ser legítimo (família, mesma empresa, representante de PJ), mas também é o sintoma mais comum de duplicidade que o documento não pegou.' } : null,
+      p.tipo === 'PJ' && p.repTambemPF ? { tipo: '', html: 'O representante desta empresa <b>também é cliente pessoa física</b>. É a relação mais rentável do escritório: demanda pessoal e empresarial na mesma conta — vale tratar como conta-chave.' } : null
+    ].filter(Boolean),
+    acoes
+  };
+}
+
+/** Ficha de um lead do Kommo sem identificação. */
+function fichaKommo(k) {
+  const num = soDigitos(k.cel).replace(/^55/, '');
+  const clientes = num ? BASE.pessoas.filter(p => p.telNum === num) : [];
+  const acoes = num ? [{ rotulo: '&#128172; Abrir no WhatsApp', href: 'https://wa.me/55' + num }] : [];
+  return {
+    titulo: esc(k.nome || 'Lead sem nome'),
+    sub: 'Contato do Kommo sem vínculo cadastral' + (k.uf ? ' · praça ' + k.uf : ''),
+    blocos: [
+      { titulo: 'Contato', campos: [
+        { r: 'Celular', v: esc(k.cel || '—') },
+        { r: 'Estado (DDD)', v: k.uf || 'não identificado' },
+        { r: 'Telefone válido', v: k.valido
+            ? '<span class="tag-pct verde">Sim</span>' : '<span class="tag-pct vermelho">Não</span>' }
+      ]},
+      clientes.length ? { titulo: 'Cliente correspondente na base', campos: clientes.map(c => ({
+        r: c.tipo + ' · ' + (c.doc || 'sem documento'), v: esc(c.nome), largo: true
+      })) } : null
+    ].filter(Boolean),
+    notas: [
+      clientes.length
+        ? { tipo: '', html: 'O telefone deste lead <b>já corresponde a um cliente cadastrado</b>. Basta identificá-lo no Kommo para unificar o histórico — é o enriquecimento de menor esforço e maior retorno.' }
+        : k.valido
+          ? { tipo: 'alerta', html: 'Contato válido mas <b>fora da base de clientes</b>. Enquanto não for identificado, não entra em campanha segmentada nem em ação de recompra.' }
+          : { tipo: 'critico', html: 'Telefone <b>sem DDD reconhecível</b>: este contato está efetivamente perdido até que alguém corrija o número na origem.' }
+    ],
+    acoes
+  };
+}
+
+/* =========================================================================
+   BUSCA
+   ========================================================================= */
+function resultadosBusca() {
+  return BASE.pessoas.filter(p =>
+    (BUSCA.tipo === 'todos' || p.tipo === BUSCA.tipo) &&
+    casaBusca(BUSCA.termo, p.nome, p.doc, p.tel, p.email, p.representante));
+}
+
+function renderBusca() {
+  const todos = resultadosBusca();
+  const vis = todos.slice(0, 120);
+  const corpo = document.getElementById('corpoBusca');
+
+  if (!BUSCA.termo && BUSCA.tipo === 'todos') {
+    corpo.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--texto-muted);padding:1.4rem">' +
+      'Digite um nome, telefone, CPF/CNPJ ou e-mail para localizar um cliente.</td></tr>';
+    document.getElementById('notaBusca').textContent =
+      BASE.pessoas.length + ' clientes disponíveis para consulta.';
+    return;
+  }
+
+  corpo.innerHTML = vis.length ? vis.map(p => {
+    const ocorr = [!p.docOk, p.dupDoc, p.dupTel, p.dupMail, p.emailRuim, !p.fone.ok].filter(Boolean).length;
+    return '<tr>' +
+      '<td><b>' + esc(p.nome) + '</b>' +
+      (p.representante ? '<br><span style="color:var(--texto-muted);font-size:.75rem">' + esc(p.representante) + '</span>' : '') + '</td>' +
+      '<td><span class="tag-pct neutro">' + p.tipo + '</span></td>' +
+      '<td>' + esc(p.doc || '—') + '</td>' +
+      '<td>' + esc(p.tel || '—') + (p.uf ? ' <span style="color:var(--texto-muted)">(' + p.uf + ')</span>' : '') + '</td>' +
+      '<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis">' + esc(p.email || '—') + '</td>' +
+      '<td>' + (ocorr ? '<span class="tag-pct amarelo">' + ocorr + ' ocorrência' + (ocorr === 1 ? '' : 's') + '</span>'
+                      : '<span class="tag-pct verde">Íntegro</span>') + '</td></tr>';
+  }).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--texto-muted);padding:1.4rem">Nenhum cliente encontrado para essa busca.</td></tr>';
+
+  if (vis.length) tabelaClicavel('corpoBusca', vis, fichaCliente);
+  document.getElementById('notaBusca').textContent =
+    'Encontrados ' + todos.length + ' cliente(s)' + (todos.length > vis.length ? ' — exibindo os 120 primeiros.' : '.');
+}
+
 function renderKPIs(b, a) {
   document.getElementById('subResumo').textContent =
     a.total + ' clientes cadastrados · ' + a.pf + ' pessoas físicas e ' + a.pj + ' pessoas jurídicas.';
@@ -922,6 +1319,7 @@ function renderTabelaQual(b) {
       '<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis">' + esc(p.email || '—') + '</td>' +
       '<td>' + tags.join(' ') + '</td></tr>';
   }).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--texto-muted);padding:1.2rem">Nenhum cadastro neste filtro.</td></tr>';
+  if (vis.length) tabelaClicavel('corpoQual', vis, fichaCliente);
   const totalFiltro = b.pessoas.filter(passa).length;
   document.getElementById('notaQual').textContent =
     'Exibindo ' + vis.length + ' de ' + totalFiltro + ' cadastros com ocorrência' +
@@ -940,7 +1338,8 @@ function renderPJ(b, a) {
       pjs.some(p => !p.docOk) ? COR_VERMELHO : COR_VERDE)
   ].join('');
 
-  document.getElementById('corpoPJ').innerHTML = pjs.slice(0, 200).map(p =>
+  const pjVis = pjs.slice(0, 200);
+  document.getElementById('corpoPJ').innerHTML = pjVis.map(p =>
     '<tr>' +
     '<td><b>' + esc(p.nome) + '</b></td>' +
     '<td>' + esc(p.doc || '—') + (p.docOk ? '' : ' <span class="tag-pct vermelho">inválido</span>') + '</td>' +
@@ -948,6 +1347,7 @@ function renderPJ(b, a) {
     '<td>' + esc(p.tel || '—') + (p.uf ? ' <span style="color:var(--texto-muted)">(' + p.uf + ')</span>' : '') + '</td>' +
     '<td>' + (p.repTambemPF ? '<span class="tag-pct verde">Também cliente PF</span>' : '<span class="tag-pct neutro">Só PJ</span>') + '</td></tr>'
   ).join('');
+  tabelaClicavel('corpoPJ', pjVis, fichaCliente);
 }
 
 function renderKommo(b, a) {
@@ -959,7 +1359,8 @@ function renderKommo(b, a) {
     itemResumo('Telefone inválido', num(a.kommoInvalido), 'sem DDD reconhecível — contato perdido', a.kommoInvalido ? COR_VERMELHO : COR_VERDE)
   ].join('');
 
-  document.getElementById('corpoKommo').innerHTML = b.kommo.slice(0, 200).map(k =>
+  const kVis = b.kommo.slice(0, 200);
+  document.getElementById('corpoKommo').innerHTML = kVis.map(k =>
     '<tr>' +
     '<td><b>' + esc(k.nome || '—') + '</b></td>' +
     '<td>' + esc(k.cel || '—') + '</td>' +
@@ -968,6 +1369,7 @@ function renderKommo(b, a) {
       : !k.valido ? '<span class="tag-pct vermelho">Telefone inválido</span>'
       : '<span class="tag-pct amarelo">Fora da base</span>') + '</td></tr>'
   ).join('');
+  tabelaClicavel('corpoKommo', kVis, fichaKommo);
   document.getElementById('notaKommo').textContent =
     'Exibindo ' + Math.min(200, b.kommo.length) + ' de ' + b.kommo.length + ' contatos não identificados.';
 }
@@ -1039,9 +1441,26 @@ function renderAtencao(b, a) {
   document.getElementById('listaAtencao').innerHTML = itens.join('');
 }
 
+let buscaMontada = false;
+function montarBusca() {
+  if (buscaMontada) return;
+  buscaMontada = true;
+  document.getElementById('buscaCampo').innerHTML =
+    campoBusca('inputBusca', 'Nome, telefone, CPF/CNPJ ou e-mail…');
+  ligarBusca('inputBusca', v => { BUSCA.termo = v; renderBusca(); });
+  document.querySelectorAll('.chip[data-b]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      BUSCA.tipo = btn.dataset.b;
+      document.querySelectorAll('.chip[data-b]').forEach(x => x.classList.toggle('ativo', x === btn));
+      renderBusca();
+    }));
+}
+
 function render(dados) {
   BASE = montarBase(dados);
   const a = agregar(BASE);
+  montarBusca();
+  renderBusca();
   renderKPIs(BASE, a);
   renderComposicao(BASE, a);
   renderQualidade(BASE, a);
