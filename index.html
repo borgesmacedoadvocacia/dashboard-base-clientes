@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<script>
+/* Central BM — o acesso a este dashboard agora é pela central única.
+   Link antigo/acesso direto é remanejado para a central; dentro dela,
+   com a sessão ativa, a página abre normalmente. */
+(function () {
+  var PORTAL = 'https://borgesmacedoadvocacia.github.io/';
+  if (location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1') return;
+  function ir() { try { window.top.location.replace(PORTAL); } catch (e) { location.replace(PORTAL); } }
+  if (window.self === window.top) { ir(); return; }
+  var ok = false;
+  try { ok = sessionStorage.getItem('bm_portal_auth') === '1'; } catch (e) {}
+  if (!ok) { ir(); return; }
+  document.documentElement.setAttribute('data-portal', '1');
+})();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Base de Clientes | Borges Macedo</title>
+<link rel="icon" type="image/png" href="favicon.png" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  * { -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --bg: #0f1117;
+    --bg2: #161b26;
+    --bg3: #1e2536;
+    --bg4: #232c42;
+    --azul: #2563eb;
+    --azul-claro: #3b82f6;
+    --verde: #22c55e;
+    --verde-fraco: rgba(34,197,94,0.13);
+    --vermelho: #ef4444;
+    --vermelho-fraco: rgba(239,68,68,0.13);
+    --amarelo: #f59e0b;
+    --amarelo-fraco: rgba(245,158,11,0.13);
+    --roxo: #a855f7;
+    --ciano: #06b6d4;
+    --texto: #e2e8f0;
+    --texto-muted: #64748b;
+    --borda: #1e2d4a;
+    --radius: 12px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+
+  html { font-size: 15px; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--texto);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    padding-bottom: 3rem;
+    overflow-x: hidden;
+  }
+
+  /* ===== CABEÇALHO ===== */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 1rem;
+    padding: 1rem 1.75rem;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--borda);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header-logo { display: flex; align-items: center; gap: 0.75rem; }
+  .logo-img { height: 38px; width: auto; object-fit: contain; }
+  .logo-text { display: flex; flex-direction: column; line-height: 1.2; }
+  .logo-name { font-size: 0.95rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+  .logo-sub { font-size: 0.63rem; color: var(--texto-muted); letter-spacing: 0.1em; text-transform: uppercase; }
+  .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.35rem; }
+  .header-updated { font-size: 0.72rem; color: var(--texto-muted); }
+  .btn-atualizar {
+    display: flex; align-items: center; gap: 0.4rem;
+    padding: 0.4rem 0.85rem; background: transparent;
+    border: 1px solid rgba(255,255,255,0.15); border-radius: 8px;
+    color: var(--texto); font-size: 0.8rem; font-weight: 500;
+    cursor: pointer; font-family: inherit; transition: background .15s, border-color .15s;
+  }
+  .btn-atualizar:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.3); }
+
+  /* ===== LAYOUT ===== */
+  .container { max-width: 1500px; margin: 0 auto; padding: 1.5rem 1.75rem; }
+  .secao { margin-bottom: 2rem; }
+  .secao-titulo {
+    display: flex; align-items: center; gap: 0.6rem;
+    font-size: 0.95rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; margin-bottom: 0.35rem;
+  }
+  .secao-titulo::before { content: ''; width: 3px; height: 17px; background: var(--azul-claro); border-radius: 2px; }
+  .secao-sub { font-size: 0.78rem; color: var(--texto-muted); margin-bottom: 1rem; margin-left: 0.9rem; }
+
+  .card {
+    background: var(--bg2); border: 1px solid var(--borda);
+    border-radius: var(--radius); padding: 1.15rem; box-shadow: var(--shadow);
+  }
+
+  /* ===== KPIs ===== */
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 0.9rem; }
+  .kpi { position: relative; overflow: hidden; }
+  .kpi::after { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background: var(--azul-claro); }
+  .kpi.verde::after { background: var(--verde); }
+  .kpi.vermelho::after { background: var(--vermelho); }
+  .kpi.amarelo::after { background: var(--amarelo); }
+  .kpi.roxo::after { background: var(--roxo); }
+  .kpi-topo { display:flex; align-items:center; justify-content:space-between; gap:.5rem; margin-bottom:.55rem; }
+  .kpi-nome { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--texto-muted); font-weight: 700; }
+  .kpi-pct {
+    font-size: 0.72rem; font-weight: 800; padding: 0.15rem 0.45rem; border-radius: 6px; white-space: nowrap;
+  }
+  .kpi-pct.verde { background: var(--verde-fraco); color: var(--verde); }
+  .kpi-pct.vermelho { background: var(--vermelho-fraco); color: var(--vermelho); }
+  .kpi-pct.amarelo { background: var(--amarelo-fraco); color: var(--amarelo); }
+  .kpi-pct.neutro { background: var(--bg3); color: var(--texto-muted); }
+  .kpi-valor { font-size: 1.55rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; }
+  .kpi-rodape { margin-top: 0.6rem; padding-top: 0.55rem; border-top: 1px solid var(--borda); font-size: 0.75rem; color: var(--texto-muted); display:flex; flex-direction:column; gap:.2rem; }
+  .kpi-rodape span b { color: var(--texto); font-weight: 600; }
+
+  /* ===== BARRA DE PROGRESSO ===== */
+  .barra-fundo { height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; margin-top: .5rem; }
+  .barra-fill { height: 100%; border-radius: 3px; transition: width .4s ease; }
+
+  /* ===== TABELAS ===== */
+  .tabela-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.83rem; min-width: 640px; }
+  thead th {
+    text-align: right; padding: 0.6rem 0.7rem; font-size: 0.67rem; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--texto-muted); font-weight: 700;
+    border-bottom: 1px solid var(--borda); white-space: nowrap; background: var(--bg2);
+    position: sticky; top: 0;
+  }
+  thead th:first-child { text-align: left; }
+  tbody td { padding: 0.55rem 0.7rem; text-align: right; border-bottom: 1px solid rgba(30,45,74,0.5); white-space: nowrap; }
+  tbody td:first-child { text-align: left; white-space: normal; }
+  tbody tr.destaque { background: rgba(255,255,255,0.04); }
+  tbody tr.destaque td { font-weight: 800; border-top: 1px solid var(--borda); }
+  .tag-pct { font-weight: 800; padding: 0.1rem 0.5rem; border-radius: 5px; font-size: 0.76rem; display:inline-block; }
+  .tag-pct.verde { background: var(--verde-fraco); color: var(--verde); }
+  .tag-pct.vermelho { background: var(--vermelho-fraco); color: var(--vermelho); }
+  .tag-pct.amarelo { background: var(--amarelo-fraco); color: var(--amarelo); }
+  .tag-pct.neutro { background: var(--bg3); color: var(--texto-muted); }
+  .val-neg { color: var(--vermelho); font-weight: 600; }
+  .val-pos { color: var(--verde); font-weight: 600; }
+
+  /* ===== FILTROS (CHIPS) ===== */
+  .filtros { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-bottom: 0.9rem; }
+  .filtros .sep { width: 1px; align-self: stretch; background: var(--borda); margin: 0 0.35rem; }
+  .chip {
+    background: var(--bg3); border: 1px solid var(--borda); border-radius: 999px;
+    color: var(--texto-muted); font-size: 0.74rem; font-weight: 600; font-family: inherit;
+    padding: 0.3rem 0.75rem; cursor: pointer; transition: all .15s; white-space: nowrap;
+  }
+  .chip:hover { color: var(--texto); border-color: rgba(255,255,255,0.25); }
+  .chip.ativo { background: var(--azul); border-color: var(--azul); color: #fff; }
+  .tag-aba {
+    display: inline-block; padding: 0.12rem 0.5rem; border-radius: 5px;
+    font-size: 0.7rem; font-weight: 700; white-space: nowrap;
+  }
+
+  /* ===== GRÁFICOS ===== */
+  .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(370px, 1fr)); gap: 1rem; }
+  .grafico-box { position: relative; width: 100%; }
+  .grafico-box.alto { height: 360px; }
+  .grafico-box.medio { height: 300px; }
+
+  /* ===== RESUMO POR ABA ===== */
+  .resumo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.9rem; margin-bottom: 1rem; }
+  .resumo-item { background: var(--bg3); border: 1px solid var(--borda); border-radius: 10px; padding: 0.9rem; }
+  .resumo-nome { font-size: 0.67rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--texto-muted); font-weight: 700; margin-bottom: 0.35rem; }
+  .resumo-valor { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.02em; }
+  .resumo-nota { font-size: 0.71rem; color: var(--texto-muted); margin-top: 0.25rem; }
+
+  /* ===== OBSERVAÇÕES ===== */
+  .obs-lista { display: flex; flex-direction: column; gap: 0.6rem; }
+  .obs {
+    display: flex; gap: 0.75rem; padding: 0.8rem 0.95rem;
+    background: var(--bg3); border-radius: 10px;
+    border-left: 3px solid var(--texto-muted);
+  }
+  .obs.critico { border-left-color: var(--vermelho); background: rgba(239,68,68,0.07); }
+  .obs.atencao { border-left-color: var(--amarelo); background: rgba(245,158,11,0.06); }
+  .obs.bom { border-left-color: var(--verde); background: rgba(34,197,94,0.06); }
+  .obs.info { border-left-color: var(--azul-claro); }
+  .obs-icone { font-size: 1rem; line-height: 1.35; flex-shrink: 0; }
+  .obs-corpo { flex: 1; min-width: 0; }
+  .obs-titulo { font-size: 0.85rem; font-weight: 700; margin-bottom: 0.15rem; }
+  .obs-texto { font-size: 0.8rem; color: var(--texto-muted); line-height: 1.5; }
+  .obs-texto b { color: var(--texto); font-weight: 600; }
+  .obs-vazio { padding: 1.5rem; text-align: center; color: var(--texto-muted); font-size: 0.85rem; }
+
+  /* ===== ESTADOS ===== */
+  .estado { padding: 3rem 1.5rem; text-align: center; color: var(--texto-muted); }
+  .spinner {
+    width: 34px; height: 34px; margin: 0 auto 1rem;
+    border: 3px solid var(--bg3); border-top-color: var(--azul-claro);
+    border-radius: 50%; animation: girar .8s linear infinite;
+  }
+  @keyframes girar { to { transform: rotate(360deg); } }
+  .erro-box {
+    background: rgba(239,68,68,0.1); border: 1px solid var(--vermelho);
+    border-radius: var(--radius); padding: 1rem; margin: 1rem 1.75rem;
+    color: #fca5a5; font-size: 0.85rem; line-height: 1.5;
+  }
+  .oculto { display: none !important; }
+
+  .rodape { text-align: center; font-size: 0.72rem; color: var(--texto-muted); padding: 1.5rem; line-height: 1.7; }
+  .rodape a { color: var(--azul-claro); text-decoration: none; }
+
+  /* ===== TELA DE LOGIN ===== */
+  .login-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: radial-gradient(circle at 50% 0%, #1a2338 0%, var(--bg) 62%);
+    display: flex; align-items: center; justify-content: center; padding: 1.25rem;
+  }
+  .login-caixa {
+    width: 100%; max-width: 372px;
+    background: var(--bg2); border: 1px solid var(--borda);
+    border-radius: 16px; padding: 2rem 1.75rem;
+    box-shadow: 0 18px 60px rgba(0,0,0,0.55);
+  }
+  .login-logo { display: block; height: 46px; margin: 0 auto 1.15rem; object-fit: contain; }
+  .login-titulo { text-align: center; font-size: 1.02rem; font-weight: 700; letter-spacing: 0.02em; }
+  .login-sub {
+    text-align: center; font-size: 0.72rem; color: var(--texto-muted);
+    text-transform: uppercase; letter-spacing: 0.1em; margin-top: 0.25rem; margin-bottom: 1.6rem;
+  }
+  .campo-grupo { margin-bottom: 0.9rem; }
+  .campo-rotulo {
+    display: block; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--texto-muted); font-weight: 700; margin-bottom: 0.35rem;
+  }
+  .campo-texto {
+    width: 100%; background: var(--bg3); border: 1px solid var(--borda);
+    color: var(--texto); border-radius: 9px; padding: 0.68rem 0.85rem;
+    font-size: 0.92rem; font-family: inherit; outline: none; transition: border-color .15s;
+  }
+  .campo-texto:focus { border-color: var(--azul-claro); }
+  .campo-texto::placeholder { color: #47536b; }
+  .btn-entrar {
+    width: 100%; margin-top: 0.5rem; padding: 0.72rem;
+    background: var(--azul); border: none; border-radius: 9px;
+    color: #fff; font-size: 0.92rem; font-weight: 700; font-family: inherit;
+    cursor: pointer; transition: background .15s;
+  }
+  .btn-entrar:hover:not(:disabled) { background: var(--azul-claro); }
+  .btn-entrar:disabled { opacity: 0.6; cursor: default; }
+  .login-erro {
+    margin-top: 0.9rem; padding: 0.6rem 0.75rem; border-radius: 8px;
+    background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.45);
+    color: #fca5a5; font-size: 0.79rem; line-height: 1.45; text-align: center;
+  }
+  .login-rodape {
+    margin-top: 1.35rem; padding-top: 1rem; border-top: 1px solid var(--borda);
+    font-size: 0.7rem; color: var(--texto-muted); text-align: center; line-height: 1.55;
+  }
+  .btn-sair {
+    background: transparent; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px;
+    color: var(--texto-muted); font-size: 0.75rem; font-family: inherit;
+    padding: 0.3rem 0.6rem; cursor: pointer; transition: all .15s;
+  }
+  .btn-sair:hover { color: var(--vermelho); border-color: var(--vermelho); }
+  /* Dentro da central o encerramento de sessão é feito pela própria central */
+  html[data-portal] .btn-sair { display: none; }
+
+  @media (max-width: 720px) {
+    html { font-size: 14px; }
+    .header { padding: 0.85rem 1rem; }
+    .container { padding: 1.1rem 1rem; }
+    .kpi-valor { font-size: 1.3rem; }
+    .grafico-box.alto { height: 300px; }
+    .grafico-box.medio { height: 260px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="login-overlay" id="loginOverlay">
+  <form class="login-caixa" id="loginForm" autocomplete="on">
+    <img src="logo.png" alt="Borges Macedo Advocacia" class="login-logo" onerror="this.style.display='none'" />
+    <div class="login-titulo">Base de Clientes</div>
+    <div class="login-sub">Acesso restrito</div>
+
+    <div class="campo-grupo">
+      <label class="campo-rotulo" for="campoUsuario">Login</label>
+      <input class="campo-texto" type="text" id="campoUsuario" name="username"
+             autocomplete="username" placeholder="Usuário" required />
+    </div>
+    <div class="campo-grupo">
+      <label class="campo-rotulo" for="campoSenha">Senha</label>
+      <input class="campo-texto" type="password" id="campoSenha" name="password"
+             autocomplete="current-password" placeholder="••••••••" required />
+    </div>
+
+    <button type="submit" class="btn-entrar" id="btnEntrar">Entrar</button>
+    <div class="login-erro oculto" id="loginErro"></div>
+
+    <div class="login-rodape">
+      Painel exclusivo das lideranças.<br />
+      A sessão termina ao fechar a aba.
+    </div>
+  </form>
+</div>
+
+<header class="header oculto" id="cabecalho">
+  <div class="header-logo">
+    <img src="logo.png" alt="Borges Macedo Advocacia" class="logo-img" onerror="this.style.display='none'" />
+    <div class="logo-text">
+      <span class="logo-name">Base de Clientes</span>
+      <span class="logo-sub">Borges Macedo Advocacia · Carteira PF e PJ</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <div style="display:flex;gap:.4rem;align-items:center">
+      <button class="btn-atualizar" id="btnAtualizar">&#10227; Atualizar</button>
+      <button class="btn-sair" id="btnSair" title="Encerrar a sessão">Sair</button>
+    </div>
+    <span class="header-updated" id="atualizadoEm">—</span>
+  </div>
+</header>
+
+<div id="erroBox" class="erro-box oculto"></div>
+
+<div id="carregando" class="estado oculto">
+  <div class="spinner"></div>
+  Carregando dados da planilha…
+</div>
+
+<main class="container oculto" id="conteudo">
+  <section class="secao">
+    <div class="secao-titulo">Resumo Executivo</div>
+    <div class="secao-sub" id="subResumo">—</div>
+    <div class="kpis" id="kpis"></div>
+  </section>
+
+  <section class="secao">
+    <div class="secao-titulo">Composição e Alcance da Base</div>
+    <div class="secao-sub">Quem são os clientes do escritório e de onde eles vêm — o DDD do telefone é usado como proxy da praça de atuação.</div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="secao-sub" style="margin:0 0 .6rem 0">Pessoa física × pessoa jurídica</div>
+        <div class="grafico-box medio"><canvas id="grafTipo"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="secao-sub" style="margin:0 0 .6rem 0">Clientes por estado (DDD do telefone)</div>
+        <div class="grafico-box medio"><canvas id="grafUF"></canvas></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:1rem">
+      <div class="secao-sub" style="margin:0 0 .6rem 0">Concentração geográfica — participação acumulada por estado</div>
+      <div class="tabela-wrap">
+        <table id="tabelaUF">
+          <thead><tr><th>Estado</th><th>Clientes</th><th>% da base</th><th>Acumulado</th><th>Praça</th></tr></thead>
+          <tbody id="corpoUF"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="secao">
+    <div class="secao-titulo">Qualidade do Cadastro</div>
+    <div class="secao-sub">Cada falha aqui é um cliente que o escritório pode não conseguir localizar — ou uma cobrança/intimação que não chega.</div>
+    <div class="resumo-grid" id="resumoQualidade"></div>
+    <div class="card">
+      <div class="filtros" id="filtrosQual">
+        <button type="button" class="chip ativo" data-f="todos">Todos os problemas</button>
+        <button type="button" class="chip" data-f="dupdoc">CPF/CNPJ repetido</button>
+        <button type="button" class="chip" data-f="dupfone">Telefone repetido</button>
+        <button type="button" class="chip" data-f="dupmail">E-mail repetido</button>
+        <button type="button" class="chip" data-f="docinv">Documento inválido</button>
+        <button type="button" class="chip" data-f="mailinv">E-mail suspeito</button>
+        <button type="button" class="chip" data-f="foneinv">Telefone suspeito</button>
+      </div>
+      <div class="tabela-wrap">
+        <table id="tabelaQual">
+          <thead><tr><th>Cliente</th><th>Tipo</th><th>Documento</th><th>Telefone</th><th>E-mail</th><th>Ocorrência</th></tr></thead>
+          <tbody id="corpoQual"></tbody>
+        </table>
+      </div>
+      <div class="secao-sub" id="notaQual" style="margin:.6rem 0 0 0"></div>
+    </div>
+  </section>
+
+  <section class="secao">
+    <div class="secao-titulo">Carteira PJ</div>
+    <div class="secao-sub">Clientes pessoa jurídica e seus representantes — inclusive representantes que também constam como pessoa física na base.</div>
+    <div class="resumo-grid" id="resumoPJ"></div>
+    <div class="card">
+      <div class="tabela-wrap">
+        <table id="tabelaPJ">
+          <thead><tr><th>Empresa</th><th>CNPJ</th><th>Representante</th><th>Contato</th><th>Vínculo</th></tr></thead>
+          <tbody id="corpoPJ"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="secao">
+    <div class="secao-titulo">Contatos Não Identificados (Kommo)</div>
+    <div class="secao-sub">Leads do CRM que não puderam ser cruzados com a base de clientes. É a fila de enriquecimento cadastral com maior retorno imediato.</div>
+    <div class="resumo-grid" id="resumoKommo"></div>
+    <div class="card">
+      <div class="tabela-wrap">
+        <table id="tabelaKommo">
+          <thead><tr><th>Lead</th><th>Celular</th><th>Estado (DDD)</th><th>Situação</th></tr></thead>
+          <tbody id="corpoKommo"></tbody>
+        </table>
+      </div>
+      <div class="secao-sub" id="notaKommo" style="margin:.6rem 0 0 0"></div>
+    </div>
+  </section>
+
+  <section class="secao">
+    <div class="secao-titulo">Pontos de Atenção</div>
+    <div class="secao-sub">Gerados automaticamente a partir dos dados atuais da planilha.</div>
+    <div class="obs-lista" id="listaAtencao"></div>
+  </section>
+
+</main>
+
+<footer class="rodape">
+  Borges Macedo Advocacia · Carteira PF e PJ · Atualização automática a cada 5 min<br />
+  <a href="#" id="linkPlanilha" target="_blank" rel="noopener">Abrir planilha no Google Sheets</a>
+</footer>
+
+<script>
+/* =========================================================================
+   COFRES — {SHEET_ID, GOOGLE_API_KEY} cifrados com AES-256-GCM, um cofre por
+   perfil autorizado. Este painel é exclusivo das lideranças: só os perfis
+   Administração e Lideranças têm cofre aqui. Sem a credencial correta a
+   decifragem falha e a página não sabe qual planilha ler.
+   ========================================================================= */
+const COFRES = [
+  /* Administração */
+  {"v":1,"it":310000,"salt":"Bz4R/8beTQ468mzS6H++Xg==","iv":"m7NvdVvPOgiBjfTf","ct":"Hq1Mx1ccujfZ6mMEwOEhZUNjNsA3qXoV030PBX4nrmSUF6UDeKPIX35wNeokDXZxJ2Q6mHaiNgsJTAvAKeAPp7pyZfnErrSO51RyPXGVplk6i5TJwhtLyMuPiAZfAtzbJAJGv8ajqJH/WJnIEsHuctAvvlLfBrbLQjCGYZzNLAS0+6QktLY="},
+  /* Lideranças */
+  {"v":1,"it":310000,"salt":"2Rr9ICZT5zeUvN1aMbBHJw==","iv":"RJYyaNGi2wKlLI3e","ct":"JV8w/u6Zkx4syewUfr82ERu3O29WjTjrgevnFuwRj2zhnBaHt8TdCjNuGejBsc5A2Slw8hT+KlRKpIuT3Ukil6SWSrIJnIf7T/VdSH8ePFj4udie6Il55frG8bhkQw/tobL9iA7aatW8jMJxzxbVkPCB6lOr6Ik2kWK0A17Kk77/m0s1JUU="}
+];
+
+const b64bytes = b64 => Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+const normUsuario = u => u.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+async function abrirUmCofre(cofre, usuario, senha) {
+  const enc = new TextEncoder();
+  const material = await crypto.subtle.importKey(
+    'raw', enc.encode(normUsuario(usuario) + '\n' + senha), 'PBKDF2', false, ['deriveKey']);
+  const chave = await crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt: b64bytes(cofre.salt), iterations: cofre.it, hash: 'SHA-256' },
+    material, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+  const claro = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: b64bytes(cofre.iv) }, chave, b64bytes(cofre.ct));
+  return JSON.parse(new TextDecoder().decode(claro));
+}
+
+async function abrirCofre(usuario, senha) {
+  for (const cofre of COFRES) {
+    try { return await abrirUmCofre(cofre, usuario, senha); } catch (e) {}
+  }
+  throw new Error('credenciais sem acesso a este painel');
+}
+
+const CONFIG = { SHEET_ID: null, GOOGLE_API_KEY: null, AUTO_REFRESH_MIN: 5 };
+
+/* ===== utilitários comuns ===== */
+const fmtBRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+const fmtBRL0 = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+const fmtNum = new Intl.NumberFormat('pt-BR');
+function moeda(v) { return fmtBRL.format(v || 0); }
+function moedaCurta(v) { return fmtBRL0.format(v || 0); }
+function num(v) { return fmtNum.format(v || 0); }
+function pct1(v) { return (v === null || !isFinite(v)) ? '—' : v.toFixed(1).replace('.', ',') + '%'; }
+function pct0(v) { return (v === null || !isFinite(v)) ? '—' : Math.round(v) + '%'; }
+
+function parseNumBR(v) {
+  if (typeof v === 'number') return isFinite(v) ? v : 0;
+  if (v === null || v === undefined) return 0;
+  let t = String(v).replace(/\u00a0/g, ' ').trim();
+  if (t === '' || t === '-') return 0;
+  t = t.replace(/R\$/gi, '').replace(/\s/g, '');
+  if (t === '' || t === '-') return 0;
+  const negativo = t.startsWith('-') || /^\(.*\)$/.test(t);
+  t = t.replace(/[()\-+]/g, '');
+  t = t.replace(/\./g, '').replace(',', '.');
+  const n = parseFloat(t);
+  if (!isFinite(n)) return 0;
+  return negativo ? -n : n;
+}
+
+/** dd/mm/aaaa -> Date. Datas-fantasma do Sheets (1899/1900) contam como vazio. */
+function parseDataBR(v) {
+  if (!v) return null;
+  const m = String(v).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (!m) return null;
+  let ano = Number(m[3]);
+  if (ano < 100) ano += 2000;
+  if (ano < 1950) return null;
+  const dt = new Date(ano, Number(m[2]) - 1, Number(m[1]));
+  return isNaN(dt.getTime()) ? null : dt;
+}
+
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const MESES_CURTO = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const MESES_NORM = MESES.map(m => m.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase());
+
+/** "Agosto/25", "Agosto/2025" -> {ano, mes}. "Dezembro/99" = vazio. */
+function parseMesRotulo(v) {
+  if (!v) return null;
+  const t = String(v).trim();
+  const m = t.match(/^([A-Za-zÀ-ÿ]+)\s*\/\s*(\d{2,4})$/);
+  if (!m) return null;
+  const nome = m[1].normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const idx = MESES_NORM.findIndex(x => x === nome);
+  if (idx < 0) return null;
+  let ano = Number(m[2]);
+  if (ano < 100) ano += 2000;
+  if (ano < 2015 || ano > 2100) return null;   // Dezembro/99 -> 2099, descartado
+  return { ano, mes: idx };
+}
+function ordemMes(i) { return i.ano * 12 + i.mes; }
+function labelMes(i) { return MESES_CURTO[i.mes] + '/' + String(i.ano).slice(2); }
+function labelMesData(d) { return MESES_CURTO[d.getMonth()] + '/' + String(d.getFullYear()).slice(2); }
+function hojeZerado() { const h = new Date(); h.setHours(0,0,0,0); return h; }
+function diasEntre(a, b) { return Math.round((b - a) / 86400000); }
+
+function colIdx(letra) {
+  let n = 0;
+  for (const c of letra.toUpperCase()) n = n * 26 + (c.charCodeAt(0) - 64);
+  return n - 1;
+}
+
+/** Lê uma célula por nome de cabeçalho, com fallback pela letra da coluna. */
+function campo(linha, cab, nome, letra) {
+  let i = cab.indexOf(nome);
+  if (i < 0 && letra) i = colIdx(letra);
+  if (i < 0) return '';
+  const v = linha[i];
+  return v === undefined || v === null ? '' : String(v).trim();
+}
+
+/* ===== leitura via Sheets API v4 ===== */
+async function lerAbas(ranges) {
+  const base = 'https://sheets.googleapis.com/v4/spreadsheets/' + CONFIG.SHEET_ID + '/values:batchGet';
+  const p = new URLSearchParams();
+  ranges.forEach(r => p.append('ranges', r));
+  p.append('valueRenderOption', 'FORMATTED_VALUE');
+  p.append('key', CONFIG.GOOGLE_API_KEY);
+  const resp = await fetch(base + '?' + p.toString(), { cache: 'no-store' });
+  if (!resp.ok) throw new Error('Sheets API ' + resp.status);
+  const json = await resp.json();
+  return (json.valueRanges || []).map(vr => vr.values || []);
+}
+
+/** Separa cabeçalho e linhas com conteúdo; remove repetições do cabeçalho no meio. */
+function tabela(rows) {
+  if (!rows || !rows.length) return { cab: [], linhas: [] };
+  const cab = rows[0].map(h => String(h).trim());
+  const assinatura = cab.filter(Boolean).slice(0, 3).join('|');
+  const linhas = rows.slice(1).filter(r => {
+    if (!r.some(c => String(c).trim())) return false;
+    const sig = r.map(c => String(c).trim()).filter(Boolean).slice(0, 3).join('|');
+    return sig !== assinatura;
+  });
+  return { cab, linhas };
+}
+
+/* ===== gráficos ===== */
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.font.family = "'Segoe UI', system-ui, -apple-system, sans-serif";
+Chart.defaults.font.size = 12;
+Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+Chart.defaults.plugins.legend.labels.usePointStyle = true;
+Chart.defaults.plugins.legend.labels.boxWidth = 8;
+Chart.defaults.plugins.legend.labels.padding = 14;
+
+const COR_AZUL = '#3b82f6', COR_VERDE = '#22c55e', COR_VERMELHO = '#ef4444',
+      COR_AMARELO = '#f59e0b', COR_ROXO = '#a855f7', COR_CIANO = '#06b6d4',
+      COR_ROSA = '#ec4899', COR_MUTED = '#64748b', COR_BORDA = 'rgba(255,255,255,0.06)';
+const PALETA = ['#3b82f6','#22c55e','#f59e0b','#ef4444','#a855f7','#06b6d4','#ec4899','#84cc16','#f97316','#14b8a6','#8b5cf6','#eab308'];
+
+let graficos = {};
+function destruir(id) { if (graficos[id]) { graficos[id].destroy(); delete graficos[id]; } }
+function hexA(hex, a) {
+  const n = parseInt(hex.slice(1), 16);
+  return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+}
+
+function cartaoKPI(nome, valor, cor, rodape, pct) {
+  return '<div class="card kpi ' + cor + '">' +
+    '<div class="kpi-topo"><span class="kpi-nome">' + nome + '</span>' +
+    (pct !== undefined && pct !== null ? '<span class="kpi-pct ' + (cor === 'vermelho' ? 'vermelho' : cor === 'amarelo' ? 'amarelo' : cor === 'verde' ? 'verde' : 'neutro') + '">' + pct + '</span>' : '') +
+    '</div><div class="kpi-valor">' + valor + '</div>' +
+    (rodape ? '<div class="kpi-rodape"><span>' + rodape + '</span></div>' : '') + '</div>';
+}
+function itemResumo(nome, valor, nota, cor) {
+  return '<div class="resumo-item"><div class="resumo-nome"' + (cor ? ' style="color:' + cor + '"' : '') + '>' + nome + '</div>' +
+    '<div class="resumo-valor">' + valor + '</div>' +
+    '<div class="resumo-nota">' + (nota || '') + '</div></div>';
+}
+function obsCard(tipo, icone, titulo, texto) {
+  return '<div class="obs ' + tipo + '"><div class="obs-icone">' + icone + '</div><div class="obs-corpo">' +
+    '<div class="obs-titulo">' + titulo + '</div><div class="obs-texto">' + texto + '</div></div></div>';
+}
+function esc(s) {
+  return String(s === null || s === undefined ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function topN(mapa, n, rotuloOutros) {
+  const e = Object.entries(mapa).sort((a, b) => b[1] - a[1]);
+  const topo = e.slice(0, n);
+  const resto = e.slice(n).reduce((s, [, v]) => s + v, 0);
+  if (resto > 0) topo.push([rotuloOutros || 'Outros', resto]);
+  return topo;
+}
+
+/* =========================================================================
+   APLICAÇÃO
+   ========================================================================= */
+const ABAS = {
+  pf: "'Clientes PF'!A1:E3000",
+  pj: "'Clientes PJ'!A1:G3000",
+  kommo: "'Kommo (Sem identificação)'!A1:B600"
+};
+
+/* DDD -> UF. Serve como proxy da praça de atuação: a base não tem endereço. */
+const DDD_UF = {
+  11:'SP',12:'SP',13:'SP',14:'SP',15:'SP',16:'SP',17:'SP',18:'SP',19:'SP',
+  21:'RJ',22:'RJ',24:'RJ',27:'ES',28:'ES',
+  31:'MG',32:'MG',33:'MG',34:'MG',35:'MG',37:'MG',38:'MG',
+  41:'PR',42:'PR',43:'PR',44:'PR',45:'PR',46:'PR',47:'SC',48:'SC',49:'SC',
+  51:'RS',53:'RS',54:'RS',55:'RS',
+  61:'DF',62:'GO',64:'GO',63:'TO',65:'MT',66:'MT',67:'MS',
+  68:'AC',69:'RO',
+  71:'BA',73:'BA',74:'BA',75:'BA',77:'BA',79:'SE',
+  81:'PE',87:'PE',82:'AL',83:'PB',84:'RN',85:'CE',88:'CE',86:'PI',89:'PI',
+  91:'PA',93:'PA',94:'PA',92:'AM',97:'AM',95:'RR',96:'AP',98:'MA',99:'MA'
+};
+
+let BASE = null;
+const FILTRO_QUAL = { f: 'todos' };
+
+async function buscarTudo() {
+  const [pf, pj, kommo] = await lerAbas([ABAS.pf, ABAS.pj, ABAS.kommo]);
+  return { pf: tabela(pf), pj: tabela(pj), kommo: tabela(kommo) };
+}
+
+const soDigitos = s => String(s || '').replace(/\D/g, '');
+
+/** Valida CPF e CNPJ pelos dígitos verificadores. */
+function docValido(doc) {
+  const d = soDigitos(doc);
+  if (d.length === 11) return cpfValido(d);
+  if (d.length === 14) return cnpjValido(d);
+  return false;
+}
+function cpfValido(c) {
+  if (/^(\d)\1{10}$/.test(c)) return false;
+  let s = 0;
+  for (let i = 0; i < 9; i++) s += Number(c[i]) * (10 - i);
+  let r = (s * 10) % 11; if (r === 10) r = 0;
+  if (r !== Number(c[9])) return false;
+  s = 0;
+  for (let i = 0; i < 10; i++) s += Number(c[i]) * (11 - i);
+  r = (s * 10) % 11; if (r === 10) r = 0;
+  return r === Number(c[10]);
+}
+function cnpjValido(c) {
+  if (/^(\d)\1{13}$/.test(c)) return false;
+  const calc = (base, pesos) => {
+    let s = 0;
+    for (let i = 0; i < pesos.length; i++) s += Number(base[i]) * pesos[i];
+    const r = s % 11;
+    return r < 2 ? 0 : 11 - r;
+  };
+  const d1 = calc(c, [5,4,3,2,9,8,7,6,5,4,3,2]);
+  if (d1 !== Number(c[12])) return false;
+  const d2 = calc(c, [6,5,4,3,2,9,8,7,6,5,4,3,2]);
+  return d2 === Number(c[13]);
+}
+
+/** Celular/fixo brasileiro plausível: DDD conhecido e 8 ou 9 dígitos. */
+function foneInfo(tel) {
+  let d = soDigitos(tel);
+  if (d.startsWith('55') && d.length > 11) d = d.slice(2);
+  if (d.length < 10 || d.length > 11) return { ok: false, uf: null, ddd: null };
+  const ddd = Number(d.slice(0, 2));
+  const uf = DDD_UF[ddd] || null;
+  return { ok: !!uf, uf, ddd };
+}
+
+const RE_EMAIL = /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i;
+function emailSuspeito(e) {
+  const t = String(e || '').trim();
+  if (!t) return true;
+  if (!RE_EMAIL.test(t)) return true;
+  // erros de digitação comuns em domínio
+  return /\.con$|\.copm$|\.cim$|@gmail\.co$|@hotmail\.co$|\.comm$/i.test(t);
+}
+
+function normNome(n) {
+  return String(n || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/&amp;/g, '&').toUpperCase().replace(/\s+/g, ' ').trim();
+}
+
+function montarBase(dados) {
+  const pessoas = [];
+  dados.pf.linhas.forEach(l => {
+    const nome = campo(l, dados.pf.cab, 'Cliente', 'A');
+    if (!nome) return;
+    pessoas.push({
+      tipo: 'PF', nome,
+      doc: campo(l, dados.pf.cab, 'CPF', 'B'),
+      tel: campo(l, dados.pf.cab, 'Telefone', 'C'),
+      email: campo(l, dados.pf.cab, 'E-mail', 'D'),
+      representante: '', repDoc: ''
+    });
+  });
+  dados.pj.linhas.forEach(l => {
+    const nome = campo(l, dados.pj.cab, 'Cliente', 'A');
+    if (!nome) return;
+    pessoas.push({
+      tipo: 'PJ', nome,
+      doc: campo(l, dados.pj.cab, 'CNPJ', 'B'),
+      tel: campo(l, dados.pj.cab, 'Telefone', 'E'),
+      email: campo(l, dados.pj.cab, 'E-mail', 'F'),
+      representante: campo(l, dados.pj.cab, 'Representante', 'C'),
+      repDoc: campo(l, dados.pj.cab, 'CPF', 'D')
+    });
+  });
+
+  pessoas.forEach(p => {
+    p.docNum = soDigitos(p.doc);
+    p.fone = foneInfo(p.tel);
+    p.uf = p.fone.uf;
+    p.docOk = docValido(p.doc);
+    p.emailRuim = emailSuspeito(p.email);
+    p.nomeNorm = normNome(p.nome);
+    p.emailNorm = String(p.email || '').trim().toLowerCase();
+    p.telNum = soDigitos(p.tel).replace(/^55/, '');
+  });
+
+  const conta = (arr, chave) => {
+    const m = {};
+    arr.forEach(p => { const k = chave(p); if (k) m[k] = (m[k] || 0) + 1; });
+    return m;
+  };
+  const porDoc = conta(pessoas, p => p.docNum);
+  const porTel = conta(pessoas, p => p.telNum);
+  const porMail = conta(pessoas, p => p.emailNorm);
+
+  pessoas.forEach(p => {
+    p.dupDoc = p.docNum && porDoc[p.docNum] > 1;
+    p.dupTel = p.telNum && porTel[p.telNum] > 1;
+    p.dupMail = p.emailNorm && porMail[p.emailNorm] > 1;
+  });
+
+  // Representantes de PJ que também constam como PF (cliente pessoal + empresa)
+  const docsPF = new Set(pessoas.filter(p => p.tipo === 'PF').map(p => p.docNum).filter(Boolean));
+  const nomesPF = new Set(pessoas.filter(p => p.tipo === 'PF').map(p => p.nomeNorm));
+  pessoas.filter(p => p.tipo === 'PJ').forEach(p => {
+    p.repTambemPF = (p.repDoc && docsPF.has(soDigitos(p.repDoc))) || nomesPF.has(normNome(p.representante));
+  });
+
+  // Kommo — leads sem identificação, cruzados por telefone com a base
+  const telsBase = new Set(pessoas.map(p => p.telNum).filter(Boolean));
+  const kommo = dados.kommo.linhas.map(l => {
+    const nome = campo(l, dados.kommo.cab, 'Lead título', 'A');
+    const cel = campo(l, dados.kommo.cab, 'Celular (contato)', 'B').replace(/^'/, '');
+    const f = foneInfo(cel);
+    const num = soDigitos(cel).replace(/^55/, '');
+    return { nome, cel, uf: f.uf, valido: f.ok, jaNaBase: num && telsBase.has(num) };
+  }).filter(k => k.nome || k.cel);
+
+  return { pessoas, kommo };
+}
+
+function agregar(b) {
+  const p = b.pessoas;
+  const a = {
+    total: p.length,
+    pf: p.filter(x => x.tipo === 'PF').length,
+    pj: p.filter(x => x.tipo === 'PJ').length,
+    docInvalido: p.filter(x => !x.docOk).length,
+    emailRuim: p.filter(x => x.emailRuim).length,
+    foneRuim: p.filter(x => !x.fone.ok).length,
+    dupDoc: p.filter(x => x.dupDoc).length,
+    dupTel: p.filter(x => x.dupTel).length,
+    dupMail: p.filter(x => x.dupMail).length,
+    comUF: p.filter(x => x.uf).length,
+    repTambemPF: p.filter(x => x.tipo === 'PJ' && x.repTambemPF).length,
+    kommoTotal: b.kommo.length,
+    kommoJaNaBase: b.kommo.filter(k => k.jaNaBase).length,
+    kommoInvalido: b.kommo.filter(k => !k.valido).length
+  };
+  a.comProblema = p.filter(x => !x.docOk || x.emailRuim || !x.fone.ok || x.dupDoc || x.dupTel || x.dupMail).length;
+  a.integridade = a.total ? (a.total - a.comProblema) / a.total * 100 : null;
+
+  const porUF = {};
+  p.forEach(x => { if (x.uf) porUF[x.uf] = (porUF[x.uf] || 0) + 1; });
+  a.porUF = Object.entries(porUF).sort((x, y) => y[1] - x[1]);
+  return a;
+}
+
+function renderKPIs(b, a) {
+  document.getElementById('subResumo').textContent =
+    a.total + ' clientes cadastrados · ' + a.pf + ' pessoas físicas e ' + a.pj + ' pessoas jurídicas.';
+
+  const corInt = a.integridade >= 90 ? 'verde' : a.integridade >= 75 ? 'amarelo' : 'vermelho';
+  const ufTop = a.porUF[0];
+  const concUF = ufTop && a.comUF ? ufTop[1] / a.comUF * 100 : null;
+
+  document.getElementById('kpis').innerHTML = [
+    cartaoKPI('Clientes na Base', num(a.total), 'azul',
+      '<span><b>' + num(a.pf) + '</b> PF · <b>' + num(a.pj) + '</b> PJ</span>'),
+    cartaoKPI('Integridade do Cadastro', pct0(a.integridade), corInt,
+      '<span><b>' + num(a.comProblema) + '</b> cadastro' + (a.comProblema === 1 ? '' : 's') + ' com alguma inconsistência</span>'),
+    cartaoKPI('Documentos Inválidos', num(a.docInvalido), a.docInvalido ? 'vermelho' : 'verde',
+      '<span>CPF/CNPJ que não passam no dígito verificador</span>'),
+    cartaoKPI('Cadastros Duplicados', num(a.dupDoc), a.dupDoc ? 'amarelo' : 'verde',
+      '<span>mesmo CPF/CNPJ em mais de uma linha</span>'),
+    cartaoKPI('E-mails Suspeitos', num(a.emailRuim), a.emailRuim ? 'amarelo' : 'verde',
+      '<span>formato inválido ou domínio com erro de digitação</span>'),
+    cartaoKPI('Telefones Suspeitos', num(a.foneRuim), a.foneRuim ? 'amarelo' : 'verde',
+      '<span>sem DDD válido ou fora do padrão brasileiro</span>'),
+    cartaoKPI('Estados Alcançados', num(a.porUF.length), 'roxo',
+      '<span>' + (ufTop ? '<b>' + ufTop[0] + '</b> concentra ' + pct0(concUF) + ' da base' : 'sem DDD identificado') + '</span>'),
+    cartaoKPI('Leads sem Identificação', num(a.kommoTotal), a.kommoTotal ? 'amarelo' : 'verde',
+      '<span>contatos do Kommo fora da base de clientes</span>')
+  ].join('');
+}
+
+function renderComposicao(b, a) {
+  destruir('tipo');
+  graficos.tipo = new Chart(document.getElementById('grafTipo'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Pessoa física', 'Pessoa jurídica'],
+      datasets: [{ data: [a.pf, a.pj], backgroundColor: [COR_AZUL, COR_ROXO], borderColor: '#161b26', borderWidth: 2 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '62%',
+      plugins: {
+        legend: { position: 'right' },
+        tooltip: { callbacks: { label: ctx => ctx.label + ': ' + num(ctx.parsed) +
+          ' (' + pct1(a.total ? ctx.parsed / a.total * 100 : null) + ')' } }
+      }
+    }
+  });
+
+  const top = a.porUF.slice(0, 10);
+  destruir('uf');
+  graficos.uf = new Chart(document.getElementById('grafUF'), {
+    type: 'bar',
+    data: {
+      labels: top.map(([uf]) => uf),
+      datasets: [{ label: 'Clientes', data: top.map(([, n]) => n), backgroundColor: COR_CIANO, borderRadius: 4, maxBarThickness: 34 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { x: { grid: { display: false } }, y: { ticks: { precision: 0 }, grid: { color: COR_BORDA } } },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => num(ctx.parsed.y) + ' clientes (' +
+          pct1(a.comUF ? ctx.parsed.y / a.comUF * 100 : null) + ' dos identificados)' } }
+      }
+    }
+  });
+
+  let acum = 0;
+  document.getElementById('corpoUF').innerHTML = a.porUF.map(([uf, n]) => {
+    const p = a.comUF ? n / a.comUF * 100 : 0;
+    acum += p;
+    const praca = p >= 20 ? '<span class="tag-pct verde">Praça principal</span>'
+      : p >= 5 ? '<span class="tag-pct amarelo">Praça relevante</span>'
+      : '<span class="tag-pct neutro">Atuação pontual</span>';
+    return '<tr><td><b>' + uf + '</b></td><td>' + num(n) + '</td><td>' + pct1(p) +
+      '</td><td>' + pct1(acum) + '</td><td>' + praca + '</td></tr>';
+  }).join('');
+}
+
+function renderQualidade(b, a) {
+  document.getElementById('resumoQualidade').innerHTML = [
+    itemResumo('Cadastros íntegros', num(a.total - a.comProblema),
+      pct1(a.integridade) + ' da base sem nenhuma inconsistência', COR_VERDE),
+    itemResumo('Documento inválido', num(a.docInvalido),
+      'não passam no dígito verificador', a.docInvalido ? COR_VERMELHO : COR_MUTED),
+    itemResumo('Contato duplicado', num(a.dupTel + a.dupMail),
+      'mesmo telefone ou e-mail em mais de um cadastro', (a.dupTel + a.dupMail) ? COR_AMARELO : COR_MUTED),
+    itemResumo('Sem praça identificada', num(a.total - a.comUF),
+      'telefone sem DDD válido — cliente não localizável por região', (a.total - a.comUF) ? COR_AMARELO : COR_MUTED)
+  ].join('');
+  renderTabelaQual(b);
+}
+
+function renderTabelaQual(b) {
+  const f = FILTRO_QUAL.f;
+  const passa = p => {
+    if (f === 'dupdoc') return p.dupDoc;
+    if (f === 'dupfone') return p.dupTel;
+    if (f === 'dupmail') return p.dupMail;
+    if (f === 'docinv') return !p.docOk;
+    if (f === 'mailinv') return p.emailRuim;
+    if (f === 'foneinv') return !p.fone.ok;
+    return !p.docOk || p.emailRuim || !p.fone.ok || p.dupDoc || p.dupTel || p.dupMail;
+  };
+  const vis = b.pessoas.filter(passa).slice(0, 400);
+  const corpo = document.getElementById('corpoQual');
+  corpo.innerHTML = vis.length ? vis.map(p => {
+    const tags = [];
+    if (!p.docOk) tags.push('<span class="tag-pct vermelho">Documento inválido</span>');
+    if (p.dupDoc) tags.push('<span class="tag-pct amarelo">CPF/CNPJ repetido</span>');
+    if (p.dupTel) tags.push('<span class="tag-pct amarelo">Telefone repetido</span>');
+    if (p.dupMail) tags.push('<span class="tag-pct amarelo">E-mail repetido</span>');
+    if (p.emailRuim) tags.push('<span class="tag-pct neutro">E-mail suspeito</span>');
+    if (!p.fone.ok) tags.push('<span class="tag-pct neutro">Telefone suspeito</span>');
+    return '<tr>' +
+      '<td><b>' + esc(p.nome) + '</b></td>' +
+      '<td><span class="tag-pct ' + (p.tipo === 'PJ' ? 'neutro' : 'neutro') + '">' + p.tipo + '</span></td>' +
+      '<td>' + esc(p.doc || '—') + '</td>' +
+      '<td>' + esc(p.tel || '—') + (p.uf ? ' <span style="color:var(--texto-muted)">(' + p.uf + ')</span>' : '') + '</td>' +
+      '<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis">' + esc(p.email || '—') + '</td>' +
+      '<td>' + tags.join(' ') + '</td></tr>';
+  }).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--texto-muted);padding:1.2rem">Nenhum cadastro neste filtro.</td></tr>';
+  const totalFiltro = b.pessoas.filter(passa).length;
+  document.getElementById('notaQual').textContent =
+    'Exibindo ' + vis.length + ' de ' + totalFiltro + ' cadastros com ocorrência' +
+    (totalFiltro > vis.length ? ' (limitado às 400 primeiras linhas).' : '.');
+}
+
+function renderPJ(b, a) {
+  const pjs = b.pessoas.filter(p => p.tipo === 'PJ');
+  const comRep = pjs.filter(p => p.representante).length;
+  document.getElementById('resumoPJ').innerHTML = [
+    itemResumo('Empresas na carteira', num(a.pj), pct1(a.total ? a.pj / a.total * 100 : null) + ' do total de clientes', COR_ROXO),
+    itemResumo('Com representante', num(comRep), (a.pj - comRep) + ' sem representante informado', comRep === a.pj ? COR_VERDE : COR_AMARELO),
+    itemResumo('Representante também PF', num(a.repTambemPF),
+      a.repTambemPF ? 'mesma pessoa é cliente PF e sócio de PJ' : 'sem sobreposição identificada', a.repTambemPF ? COR_CIANO : COR_MUTED),
+    itemResumo('CNPJ inválido', num(pjs.filter(p => !p.docOk).length), 'não passam no dígito verificador',
+      pjs.some(p => !p.docOk) ? COR_VERMELHO : COR_VERDE)
+  ].join('');
+
+  document.getElementById('corpoPJ').innerHTML = pjs.slice(0, 200).map(p =>
+    '<tr>' +
+    '<td><b>' + esc(p.nome) + '</b></td>' +
+    '<td>' + esc(p.doc || '—') + (p.docOk ? '' : ' <span class="tag-pct vermelho">inválido</span>') + '</td>' +
+    '<td>' + esc(p.representante || '—') + '</td>' +
+    '<td>' + esc(p.tel || '—') + (p.uf ? ' <span style="color:var(--texto-muted)">(' + p.uf + ')</span>' : '') + '</td>' +
+    '<td>' + (p.repTambemPF ? '<span class="tag-pct verde">Também cliente PF</span>' : '<span class="tag-pct neutro">Só PJ</span>') + '</td></tr>'
+  ).join('');
+}
+
+function renderKommo(b, a) {
+  document.getElementById('resumoKommo').innerHTML = [
+    itemResumo('Leads sem identificação', num(a.kommoTotal), 'contatos do Kommo sem vínculo cadastral', COR_AMARELO),
+    itemResumo('Já constam na base', num(a.kommoJaNaBase),
+      a.kommoJaNaBase ? 'telefone bate com um cliente — só falta identificar' : 'nenhum cruzamento por telefone', a.kommoJaNaBase ? COR_VERDE : COR_MUTED),
+    itemResumo('A enriquecer', num(a.kommoTotal - a.kommoJaNaBase), 'contatos realmente fora da base de clientes'),
+    itemResumo('Telefone inválido', num(a.kommoInvalido), 'sem DDD reconhecível — contato perdido', a.kommoInvalido ? COR_VERMELHO : COR_VERDE)
+  ].join('');
+
+  document.getElementById('corpoKommo').innerHTML = b.kommo.slice(0, 200).map(k =>
+    '<tr>' +
+    '<td><b>' + esc(k.nome || '—') + '</b></td>' +
+    '<td>' + esc(k.cel || '—') + '</td>' +
+    '<td>' + (k.uf || '—') + '</td>' +
+    '<td>' + (k.jaNaBase ? '<span class="tag-pct verde">Telefone já na base</span>'
+      : !k.valido ? '<span class="tag-pct vermelho">Telefone inválido</span>'
+      : '<span class="tag-pct amarelo">Fora da base</span>') + '</td></tr>'
+  ).join('');
+  document.getElementById('notaKommo').textContent =
+    'Exibindo ' + Math.min(200, b.kommo.length) + ' de ' + b.kommo.length + ' contatos não identificados.';
+}
+
+function renderAtencao(b, a) {
+  const itens = [];
+
+  if (a.docInvalido > 0) {
+    itens.push(obsCard('critico', '🪪', 'Documentos que não passam na validação',
+      '<b>' + num(a.docInvalido) + '</b> cadastro' + (a.docInvalido === 1 ? '' : 's') + ' com CPF/CNPJ inválido no dígito verificador. ' +
+      'Documento errado inviabiliza procuração, petição e consulta processual — e costuma ser a causa raiz de processo cadastrado no cliente errado.'));
+  }
+  if (a.dupDoc > 0) {
+    itens.push(obsCard('atencao', '👥', 'Mesmo cliente cadastrado mais de uma vez',
+      '<b>' + num(a.dupDoc) + '</b> linha' + (a.dupDoc === 1 ? '' : 's') + ' compartilham CPF/CNPJ com outro cadastro. ' +
+      'Duplicidade infla a contagem da carteira, divide o histórico do cliente em dois registros e faz o mesmo cliente receber cobranças e comunicações em duplicidade.'));
+  }
+  if (a.dupTel + a.dupMail > 0) {
+    itens.push(obsCard('info', '📞', 'Contatos compartilhados entre cadastros',
+      '<b>' + num(a.dupTel) + '</b> cadastro(s) dividem telefone e <b>' + num(a.dupMail) + '</b> dividem e-mail. ' +
+      'Parte é legítima (família, mesma empresa, representante de PJ), mas vale conferir: contato repetido também é sintoma de duplicidade não detectada pelo documento.'));
+  }
+  if (a.emailRuim > 0) {
+    itens.push(obsCard('atencao', '✉️', 'E-mails que provavelmente não entregam',
+      '<b>' + num(a.emailRuim) + '</b> endereço' + (a.emailRuim === 1 ? '' : 's') + ' com formato inválido ou domínio digitado errado (".con", ".copm"). ' +
+      'Como o e-mail é o canal formal de envio de contrato e prestação de contas, cada endereço quebrado é um cliente que deixa de receber documento.'));
+  }
+  if (a.total - a.comUF > 0) {
+    itens.push(obsCard('atencao', '🗺️', 'Clientes sem praça identificável',
+      '<b>' + num(a.total - a.comUF) + '</b> cadastro' + (a.total - a.comUF === 1 ? '' : 's') + ' sem DDD válido no telefone. ' +
+      'Sem isso não dá para planejar capilaridade, correspondente local nem campanha por região.'));
+  }
+
+  const ufTop = a.porUF[0];
+  if (ufTop && a.comUF) {
+    const p1 = ufTop[1] / a.comUF * 100;
+    const top3 = a.porUF.slice(0, 3).reduce((s, [, n]) => s + n, 0) / a.comUF * 100;
+    itens.push(obsCard(p1 > 50 ? 'atencao' : 'info', '📍', 'Concentração geográfica da carteira',
+      '<b>' + ufTop[0] + '</b> responde por <b>' + pct1(p1) + '</b> dos clientes com praça identificada e os três maiores estados somam <b>' + pct1(top3) + '</b>, ' +
+      'em um alcance total de <b>' + a.porUF.length + ' estados</b>. ' +
+      (p1 > 50
+        ? 'A operação é fortemente dependente de uma única praça: mudança de entendimento no tribunal local afeta boa parte da carteira de uma vez.'
+        : 'A distribuição é nacional o bastante para diluir risco de jurisprudência local, mas exige rede de correspondentes.')));
+  }
+
+  if (a.repTambemPF > 0) {
+    itens.push(obsCard('bom', '🔗', 'Clientes com relação dupla (PF e PJ)',
+      '<b>' + num(a.repTambemPF) + '</b> representante' + (a.repTambemPF === 1 ? '' : 's') + ' de empresa também constam como cliente pessoa física. ' +
+      'É a carteira mais rentável do escritório: relação já consolidada, com demanda pessoal e empresarial. Vale tratar como conta-chave e mapear o que ainda não é atendido.'));
+  }
+
+  if (a.kommoTotal > 0) {
+    const pctK = a.total ? a.kommoTotal / (a.total + a.kommoTotal) * 100 : 0;
+    itens.push(obsCard('atencao', '🧩', 'Contatos do CRM fora da base de clientes',
+      '<b>' + num(a.kommoTotal) + '</b> contatos do Kommo sem identificação — o equivalente a <b>' + pct1(pctK) + '</b> de tudo que o escritório tem cadastrado. ' +
+      (a.kommoJaNaBase > 0 ? '<b>' + num(a.kommoJaNaBase) + '</b> já batem por telefone com um cliente existente e podem ser identificados imediatamente. ' : '') +
+      'Enquanto não forem tratados, essa base não pode ser usada para recompra nem para campanha segmentada.'));
+  }
+
+  if (a.integridade !== null && a.integridade >= 90) {
+    itens.push(obsCard('bom', '✅', 'Base cadastral confiável',
+      pct1(a.integridade) + ' dos cadastros não apresentam nenhuma inconsistência de documento, contato ou duplicidade.'));
+  }
+
+  itens.push(obsCard('info', '🔌', 'Vínculo com processos ainda não preenchido',
+    'A coluna <b>Processos Vinculados</b> está vazia nas duas abas. Preenchê-la conectaria esta base ao acompanhamento processual e permitiria responder, ' +
+    'sem consulta manual, quanto cada cliente já gerou de resultado e quantos casos tem em curso — a informação que sustenta política de preço e de retenção.'));
+
+  document.getElementById('listaAtencao').innerHTML = itens.join('');
+}
+
+function render(dados) {
+  BASE = montarBase(dados);
+  const a = agregar(BASE);
+  renderKPIs(BASE, a);
+  renderComposicao(BASE, a);
+  renderQualidade(BASE, a);
+  renderPJ(BASE, a);
+  renderKommo(BASE, a);
+  renderAtencao(BASE, a);
+}
+
+document.getElementById('filtrosQual').addEventListener('click', ev => {
+  const b = ev.target.closest('.chip');
+  if (!b) return;
+  FILTRO_QUAL.f = b.dataset.f;
+  document.querySelectorAll('#filtrosQual .chip').forEach(x => x.classList.toggle('ativo', x === b));
+  renderTabelaQual(BASE);
+});
+
+
+/* =========================================================================
+   CICLO / AUTENTICAÇÃO
+   ========================================================================= */
+let DADOS = null;
+
+async function carregarDados() {
+  const erroEl = document.getElementById('erroBox');
+  try {
+    DADOS = await buscarTudo();
+    document.getElementById('linkPlanilha').href =
+      'https://docs.google.com/spreadsheets/d/' + CONFIG.SHEET_ID + '/edit';
+    document.getElementById('carregando').classList.add('oculto');
+    document.getElementById('conteudo').classList.remove('oculto');
+    erroEl.classList.add('oculto');
+    document.getElementById('atualizadoEm').textContent =
+      'Atualizado às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    render(DADOS);
+  } catch (e) {
+    console.error(e);
+    document.getElementById('carregando').classList.add('oculto');
+    erroEl.classList.remove('oculto');
+    erroEl.innerHTML = '<b>Não foi possível carregar a planilha.</b><br>' + e.message +
+      '<br>Verifique se a planilha continua compartilhada como <b>"qualquer pessoa com o link pode ver"</b>.' +
+      ' Nova tentativa automática em ' + CONFIG.AUTO_REFRESH_MIN + ' min.';
+  }
+}
+
+document.getElementById('btnAtualizar').addEventListener('click', carregarDados);
+document.addEventListener('visibilitychange', () => { if (!document.hidden && DADOS) carregarDados(); });
+setInterval(() => { if (DADOS) carregarDados(); }, CONFIG.AUTO_REFRESH_MIN * 60 * 1000);
+
+const CHAVE_SESSAO = 'dashboard-base-clientes_sessao';
+
+function entrarNoPainel(segredo, guardar) {
+  CONFIG.SHEET_ID = segredo.SHEET_ID;
+  CONFIG.GOOGLE_API_KEY = segredo.GOOGLE_API_KEY;
+  if (guardar) { try { sessionStorage.setItem(CHAVE_SESSAO, JSON.stringify(segredo)); } catch (e) {} }
+  document.getElementById('loginOverlay').classList.add('oculto');
+  document.getElementById('cabecalho').classList.remove('oculto');
+  document.getElementById('carregando').classList.remove('oculto');
+  carregarDados();
+}
+
+document.getElementById('loginForm').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const btn = document.getElementById('btnEntrar');
+  const erroEl = document.getElementById('loginErro');
+  erroEl.classList.add('oculto');
+  btn.disabled = true; btn.textContent = 'Verificando…';
+  await new Promise(r => setTimeout(r, 30));
+  try {
+    const segredo = await abrirCofre(
+      document.getElementById('campoUsuario').value,
+      document.getElementById('campoSenha').value);
+    btn.textContent = 'Entrando…';
+    entrarNoPainel(segredo, true);
+  } catch (e) {
+    btn.disabled = false; btn.textContent = 'Entrar';
+    erroEl.classList.remove('oculto');
+    erroEl.textContent = 'Login ou senha sem acesso a este painel.';
+    document.getElementById('campoSenha').value = '';
+    document.getElementById('campoSenha').focus();
+  }
+});
+
+document.getElementById('btnSair').addEventListener('click', () => {
+  try { sessionStorage.removeItem(CHAVE_SESSAO); } catch (e) {}
+  location.reload();
+});
+
+(async function iniciar() {
+  let salvo = null;
+  try { salvo = sessionStorage.getItem(CHAVE_SESSAO); } catch (e) {}
+  if (salvo) { try { entrarNoPainel(JSON.parse(salvo), false); return; } catch (e) {} }
+  let cred = null;
+  try { cred = JSON.parse(sessionStorage.getItem('bm_portal_cred') || 'null'); } catch (e) {}
+  if (cred && cred.u != null && cred.s != null) {
+    try { entrarNoPainel(await abrirCofre(cred.u, cred.s), true); return; } catch (e) {}
+  }
+  document.getElementById('campoUsuario').focus();
+})();
+</script>
+</body>
+</html>
