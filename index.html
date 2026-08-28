@@ -377,6 +377,43 @@
     .modal-campos { grid-template-columns: 1fr; }
   }
 
+  /* ===== CARTÃO KPI CLICÁVEL ===== */
+  .kpi-clicavel { cursor: pointer; transition: background .14s, border-color .14s, transform .14s; }
+  .kpi-clicavel:hover {
+    background: var(--bg3); border-color: rgba(59,130,246,.4); transform: translateY(-2px);
+  }
+  .kpi-clicavel::before {
+    content: '\21F2'; position: absolute; right: .6rem; bottom: .5rem;
+    font-size: .8rem; color: var(--texto-muted); opacity: 0; transition: opacity .14s;
+  }
+  .kpi-clicavel:hover::before { opacity: .85; }
+
+  /* ===== TABELA DENTRO DO MODAL ===== */
+  .modal-tabela-wrap { overflow-x: auto; border: 1px solid var(--borda); border-radius: 10px; }
+  .modal-tabela { width: 100%; border-collapse: collapse; font-size: .81rem; min-width: 420px; }
+  .modal-tabela thead th {
+    position: sticky; top: 0; background: var(--bg3);
+    text-align: left; padding: .55rem .7rem; font-size: .64rem;
+    text-transform: uppercase; letter-spacing: .06em; color: var(--texto-muted);
+    font-weight: 700; white-space: nowrap; border-bottom: 1px solid var(--borda);
+  }
+  .modal-tabela thead th.dir, .modal-tabela td.dir { text-align: right; }
+  .modal-tabela tbody td {
+    padding: .5rem .7rem; border-bottom: 1px solid rgba(30,45,74,.5);
+    vertical-align: top; line-height: 1.45;
+  }
+  .modal-tabela tbody tr:last-child td { border-bottom: none; }
+  .modal-tabela tbody tr:hover { background: rgba(255,255,255,.03); }
+  .modal-lista-nota { font-size: .74rem; color: var(--texto-muted); margin-top: .55rem; }
+  .modal-lista-total {
+    margin-top: .8rem; padding: .7rem .9rem; border-radius: 9px;
+    background: var(--bg3); border: 1px solid var(--borda);
+    font-size: .85rem; font-weight: 600;
+  }
+  .modal-lista-total b { color: var(--azul-claro); }
+  .resumo-item.item-clicavel { cursor: pointer; transition: background .14s, border-color .14s; }
+  .resumo-item.item-clicavel:hover { background: var(--bg4); border-color: rgba(59,130,246,.4); }
+
 </style>
 </head>
 <body>
@@ -866,6 +903,79 @@ function ligarBusca(id, aoDigitar) {
   limpar.addEventListener('click', () => { el.value = ''; el.focus(); disparar(); });
 }
 
+/* =========================================================================
+   LISTA DENTRO DO MODAL
+   Para quando o clique num cartão precisa mostrar "quais registros estão
+   por trás deste número".
+   ========================================================================= */
+/**
+ * abrirLista({ titulo, sub, colunas:[{r,chave,alinha,formata}], linhas:[obj],
+ *              vazio, rodape, notas:[{tipo,html}], limite })
+ */
+function abrirLista(cfg) {
+  const cols = cfg.colunas || [];
+  const linhas = cfg.linhas || [];
+  const limite = cfg.limite || 300;
+  const vis = linhas.slice(0, limite);
+
+  let html = '';
+  if (cfg.resumo && cfg.resumo.length) {
+    html += '<div class="modal-campos" style="margin-bottom:1rem">' +
+      cfg.resumo.map(c => '<div class="modal-campo">' +
+        '<div class="modal-rotulo">' + c.r + '</div>' +
+        '<div class="modal-valor ' + (c.classe || '') + '">' + c.v + '</div></div>').join('') +
+      '</div>';
+  }
+
+  if (!vis.length) {
+    html += '<div class="obs-vazio">' + (cfg.vazio || 'Nenhum registro para exibir.') + '</div>';
+  } else {
+    html += '<div class="modal-tabela-wrap"><table class="modal-tabela"><thead><tr>' +
+      cols.map(c => '<th' + (c.alinha === 'dir' ? ' class="dir"' : '') + '>' + c.r + '</th>').join('') +
+      '</tr></thead><tbody>' +
+      vis.map(l => '<tr>' + cols.map(c => {
+        const bruto = l[c.chave];
+        const v = c.formata ? c.formata(bruto, l) : (bruto === null || bruto === undefined || bruto === '' ? '—' : esc(bruto));
+        return '<td' + (c.alinha === 'dir' ? ' class="dir"' : '') + '>' + v + '</td>';
+      }).join('') + '</tr>').join('') +
+      '</tbody></table></div>';
+    if (linhas.length > vis.length) {
+      html += '<div class="modal-lista-nota">Exibindo os ' + vis.length + ' primeiros de ' +
+        linhas.length + ' registros.</div>';
+    } else {
+      html += '<div class="modal-lista-nota">' + linhas.length + ' registro' +
+        (linhas.length === 1 ? '' : 's') + '.</div>';
+    }
+  }
+
+  if (cfg.rodape) html += '<div class="modal-lista-total">' + cfg.rodape + '</div>';
+  (cfg.notas || []).forEach(n => {
+    if (n && n.html) html += '<div class="modal-nota ' + (n.tipo || '') + '">' + n.html + '</div>';
+  });
+
+  const f = document.getElementById('modalFundo');
+  document.getElementById('modalTitulo').innerHTML = cfg.titulo || '';
+  document.getElementById('modalSub').innerHTML = cfg.sub || '';
+  document.getElementById('modalCorpo').innerHTML = html;
+  f.classList.remove('oculto');
+  requestAnimationFrame(() => f.classList.add('aberto'));
+}
+
+/** Marca um cartão KPI como clicável e liga ao detalhamento. */
+function kpiClicavel(indice, aoAbrir) {
+  const cartoes = document.querySelectorAll('#kpis .kpi');
+  const el = cartoes[indice];
+  if (!el) return;
+  el.classList.add('kpi-clicavel');
+  el.title = 'Clique para ver os registros';
+  el.addEventListener('click', aoAbrir);
+}
+
+/** Liga vários cartões de uma vez: mapa {indice: função}. */
+function ligarKPIs(mapa) {
+  Object.keys(mapa).forEach(i => kpiClicavel(Number(i), mapa[i]));
+}
+
 
 /* =========================================================================
    APLICAÇÃO
@@ -1225,6 +1335,8 @@ function renderKPIs(b, a) {
     cartaoKPI('Leads sem Identificação', num(a.kommoTotal), a.kommoTotal ? 'amarelo' : 'verde',
       '<span>contatos do Kommo fora da base de clientes</span>')
   ].join('');
+
+  ligarDetalheKPIs(b, a);
 }
 
 function renderComposicao(b, a) {
@@ -1479,6 +1591,89 @@ document.getElementById('filtrosQual').addEventListener('click', ev => {
 
 
 /* =========================================================================
+   DETALHE DOS CARTÕES
+   ========================================================================= */
+const COL_CLI = [
+  { r: 'Cliente', chave: 'nome', formata: (v, l) => '<b>' + esc(v) + '</b>' +
+      (l.representante ? '<br><span style="color:var(--texto-muted);font-size:.72rem">' + esc(l.representante) + '</span>' : '') },
+  { r: 'Tipo', chave: 'tipo', formata: v => '<span class="tag-pct neutro">' + v + '</span>' },
+  { r: 'Documento', chave: 'doc', formata: (v, l) => esc(v || '—') +
+      (l.docOk ? '' : ' <span class="tag-pct vermelho">inválido</span>') },
+  { r: 'Telefone', chave: 'tel', formata: (v, l) => esc(v || '—') +
+      (l.uf ? ' <span style="color:var(--texto-muted)">(' + l.uf + ')</span>' : '') },
+  { r: 'E-mail', chave: 'email', formata: (v, l) => esc(v || '—') +
+      (l.emailRuim && v ? ' <span class="tag-pct amarelo">suspeito</span>' : '') }
+];
+
+function listaClientes(titulo, linhas, nota, tipo) {
+  abrirLista({
+    titulo,
+    sub: linhas.length + ' cadastro' + (linhas.length === 1 ? '' : 's'),
+    colunas: COL_CLI,
+    linhas: [...linhas].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')),
+    vazio: 'Nenhum cadastro nesta condição.',
+    notas: nota ? [{ tipo: tipo || '', html: nota }] : []
+  });
+}
+
+function ligarDetalheKPIs(b, a) {
+  const p = b.pessoas;
+  ligarKPIs({
+    0: () => listaClientes('Clientes na Base', p,
+      '<b>' + num(a.pf) + '</b> pessoas físicas e <b>' + num(a.pj) + '</b> pessoas jurídicas.'),
+    1: () => listaClientes('Cadastros com Inconsistência',
+      p.filter(x => !x.docOk || x.emailRuim || !x.fone.ok || x.dupDoc || x.dupTel || x.dupMail),
+      'Integridade de <b>' + pct1(a.integridade) + '</b>: são os cadastros que puxam esse número para baixo.', 'alerta'),
+    2: () => listaClientes('Documentos Inválidos', p.filter(x => !x.docOk),
+      'CPF ou CNPJ que <b>não passam no dígito verificador</b>. Documento errado inviabiliza procuração, petição e consulta processual.', 'critico'),
+    3: () => listaClientes('Cadastros Duplicados', p.filter(x => x.dupDoc),
+      'Mesmo CPF/CNPJ em mais de uma linha. Duplicidade infla a carteira e divide o histórico do cliente.', 'alerta'),
+    4: () => listaClientes('E-mails Suspeitos', p.filter(x => x.emailRuim),
+      'Formato inválido ou domínio com erro de digitação (".con", ".copm"). Cada endereço quebrado é um cliente que não recebe contrato nem prestação de contas.', 'alerta'),
+    5: () => listaClientes('Telefones Suspeitos', p.filter(x => !x.fone.ok),
+      'Sem DDD válido ou fora do padrão brasileiro — cliente não localizável por telefone.', 'alerta'),
+    6: () => {
+      const linhas = a.porUF.map(([uf, qtd]) => ({
+        uf, qtd, pct: a.comUF ? qtd / a.comUF * 100 : 0,
+        praca: (a.comUF && qtd / a.comUF * 100 >= 20) ? 'Praça principal'
+             : (a.comUF && qtd / a.comUF * 100 >= 5) ? 'Praça relevante' : 'Atuação pontual'
+      }));
+      abrirLista({
+        titulo: 'Estados Alcançados',
+        sub: a.porUF.length + ' estados · ' + num(a.comUF) + ' clientes com praça identificada',
+        colunas: [
+          { r: 'Estado', chave: 'uf', formata: v => '<b>' + v + '</b>' },
+          { r: 'Clientes', chave: 'qtd', alinha: 'dir', formata: v => num(v) },
+          { r: '% da base', chave: 'pct', alinha: 'dir', formata: v => pct1(v) },
+          { r: 'Praça', chave: 'praca', formata: v => '<span class="tag-pct ' +
+              (v === 'Praça principal' ? 'verde' : v === 'Praça relevante' ? 'amarelo' : 'neutro') + '">' + v + '</span>' }
+        ],
+        linhas,
+        rodape: 'Sem praça identificada: <b>' + num(a.total - a.comUF) + '</b> cadastros',
+        notas: [{ tipo: '', html: 'A praça vem do <b>DDD do telefone</b>: indica de onde o cliente fala, não onde mora.' }]
+      });
+    },
+    7: () => abrirLista({
+      titulo: 'Leads sem Identificação (Kommo)',
+      sub: b.kommo.length + ' contatos do CRM sem vínculo cadastral',
+      colunas: [
+        { r: 'Lead', chave: 'nome', formata: v => '<b>' + esc(v || '—') + '</b>' },
+        { r: 'Celular', chave: 'cel', formata: v => esc(v || '—') },
+        { r: 'Estado', chave: 'uf', formata: v => v || '—' },
+        { r: 'Situação', chave: 'jaNaBase', formata: (v, l) => v
+            ? '<span class="tag-pct verde">Telefone já na base</span>'
+            : !l.valido ? '<span class="tag-pct vermelho">Telefone inválido</span>'
+            : '<span class="tag-pct amarelo">Fora da base</span>' }
+      ],
+      linhas: [...b.kommo].sort((x, y) => (y.jaNaBase ? 1 : 0) - (x.jaNaBase ? 1 : 0)),
+      rodape: '<b>' + num(a.kommoJaNaBase) + '</b> já batem por telefone com um cliente — identificação imediata',
+      notas: [{ tipo: 'alerta', html: 'Enquanto não forem identificados, estes contatos não entram em campanha segmentada nem em ação de recompra.' }]
+    })
+  });
+}
+
+
+/* =========================================================================
    CICLO / AUTENTICAÇÃO
    ========================================================================= */
 let DADOS = null;
@@ -1487,8 +1682,11 @@ async function carregarDados() {
   const erroEl = document.getElementById('erroBox');
   try {
     DADOS = await buscarTudo();
-    document.getElementById('linkPlanilha').href =
-      'https://docs.google.com/spreadsheets/d/' + CONFIG.SHEET_ID + '/edit';
+    const idLink = CONFIG.SHEET_ID ||
+      (CONFIG.SHEETS ? Object.values(CONFIG.SHEETS)[0] : null);
+    const linkEl = document.getElementById('linkPlanilha');
+    if (idLink) linkEl.href = 'https://docs.google.com/spreadsheets/d/' + idLink + '/edit';
+    else linkEl.style.display = 'none';
     document.getElementById('carregando').classList.add('oculto');
     document.getElementById('conteudo').classList.remove('oculto');
     erroEl.classList.add('oculto');
@@ -1512,8 +1710,9 @@ setInterval(() => { if (DADOS) carregarDados(); }, CONFIG.AUTO_REFRESH_MIN * 60 
 const CHAVE_SESSAO = 'dashboard-base-clientes_sessao';
 
 function entrarNoPainel(segredo, guardar) {
-  CONFIG.SHEET_ID = segredo.SHEET_ID;
-  CONFIG.GOOGLE_API_KEY = segredo.GOOGLE_API_KEY;
+  // Copia tudo o que o cofre trouxer: um painel pode guardar uma planilha
+  // (SHEET_ID) ou várias (SHEETS), além da chave da API.
+  Object.assign(CONFIG, segredo);
   if (guardar) { try { sessionStorage.setItem(CHAVE_SESSAO, JSON.stringify(segredo)); } catch (e) {} }
   document.getElementById('loginOverlay').classList.add('oculto');
   document.getElementById('cabecalho').classList.remove('oculto');
